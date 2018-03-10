@@ -200,11 +200,24 @@ sub parse_feed_item {
     }
   }
 
+  $item->find('enclosure')->each(
+    sub {
+        push @{ $h{enclosures} }, shift->attr;
+    }
+  );
+
   # let's handle links seperately, because ATOM loves these buggers:
   $item->find('link')->each(sub {
     my $l = shift;
     if ($l->attr('href')) {
-      if (!$l->attr('rel') || $l->attr('rel') eq 'alternate') {
+      if ( $l->attr('rel' ) && $l->attr('rel') eq 'enclosure' ) {
+                push @{$h{enclosures}}, {
+                    url    => $l->attr('href'),
+                    type   => $l->attr('type'),
+                    length => $l->attr('length')
+                };
+      }
+      elsif (!$l->attr('rel') || $l->attr('rel') eq 'alternate') {
         $h{'link'} = $l->attr('href');
       }
     }
@@ -257,41 +270,25 @@ sub parse_feed_item {
   return \%h;
 }
 
-# find_feeds - get RSS/Atom feed URL from argument.
+# discover - get RSS/Atom feed URL from argument.
 # Code adapted to use Mojolicious from Feed::Find by Benjamin Trott
 # Any stupid mistakes are my own
 sub discover {
   my $self = shift;
   my $url  = shift;
-  my $cb   = (ref $_[-1] eq 'CODE') ? pop @_ : undef;
 
 #  $self->ua->max_redirects(5)->connect_timeout(30);
-  my $main = sub {
-    my ($tx) = @_;
-    my @feeds;
-
-#    if ($tx->success) { say $tx->res->code } else { say $tx->error };
-    return unless ($tx->success && $tx->res->code == 200);
-    eval { @feeds = _find_feed_links($self, $tx->req->url, $tx->res); };
-    if ($@) {
-      croak "Exception in find_feeds - ", $@;
-    }
-    return (@feeds);
-  };
-  if ($cb) {    # non-blocking:
-    $self->ua->get(
-      $url,
-      sub {
-        my ($ua, $tx) = @_;
-        my (@feeds) = $main->($tx);
-        $cb->(@feeds);
-      }
-    );
-  }
-  else {
-    my $tx = $self->ua->get($url);
-    return $main->($tx);
-  }
+  return
+  $self->ua->get_p( $url )
+           ->catch(sub { my ($err) = shift; die "Connection Error: $err" })
+           ->then(sub {
+                my ($tx) = @_;
+                my @feeds;
+                if ($tx->success && $tx->res->code == 200) {
+                    @feeds = _find_feed_links($self, $tx->req->url, $tx->res);
+                }
+              return (@feeds);
+            });
 }
 
 sub _find_feed_links {
@@ -419,15 +416,146 @@ __END__
 
 =head1 NAME
 
-Mojo::Feed - It's new $module
+Mojo::Feed - Mojo::DOM-based parsing of RSS & Atom feeds
 
 =head1 SYNOPSIS
 
     use Mojo::Feed;
 
+    my $feed = Mojo::Feed->new("atom.xml");
+    print $feed->title, "\n",
+      $feed->items->map('title')->join("\n");
+
+    # Feed discovery (returns a Promise):
+    Mojo::Feed->discover("search.cpan.org")->then(sub {
+      my (@feeds) = @_;
+      if (@feeds) {
+        print $_->url for (@feeds);
+      }
+    })->catch(sub { die "Error: ", @_; });
+
+   # 
+
 =head1 DESCRIPTION
 
-Mojo::Feed is ...
+L<Mojo::Feed> is an Object Oriented module for identifying,
+fetching and parsing RSS and Atom Feeds.  It relies on
+L<Mojo::DOM> for XML/HTML parsing and L<Mojo::UserAgent>
+for fetching feeds and checking URLs.
+
+Date parsing used L<HTTP::Date>.
+
+=head1 ATTRIBUTES
+
+L<Mojo::Feed> implements the following attributes.
+
+=head2 url
+
+  $feed->url("http://corky.net/dotan/feed/");
+  $url = Mojo::URL->new("http://corky.net/dotan/feed/");
+  $feed->url($url);
+  print $feed->url->path;
+
+A Mojo::URL object from which to fetch an RSS/Atom feed.
+
+=head2 ua
+
+  $feed->ua(Mojo::UserAgent->new());
+  $feed->ua->get("http://example.com");
+
+L<Mojo::UserAgent> object used to fetch feeds from the web.
+
+
+The following attributes are available after the feed has been parsed:
+
+=head2  title
+
+=head2  description 
+
+May be filled from subtitle or tagline if absent
+
+=head2  html_url
+
+web page URL associated with the feed
+
+=head2  items
+
+L<Mojo::Collection> of L<Mojo::Feed::Item> objects representingfeed news items
+
+=head2  subtitle
+
+Optional
+
+=head2  tagline
+
+Optional
+
+=head2  author
+
+Name of author field, or dc:creator or webMaster
+
+=head2  published
+
+Time in epoch seconds (may be filled with pubDate, dc:date, created, issued, updated or modified)
+
+
+=head1 METHODS
+
+L<Mojo::Feed> inherits all methods from
+L<Mojo::Base> and implements the following new ones.
+
+=head2 discover
+
+  my @feeds;
+  Mojo::Feed->discover('search.cpan.org')
+            ->then(sub { @feeds = @_; })
+            ->wait();
+  for my $feed in (@feeds) {
+    print $feed . "\n";
+  }
+  # @feeds is a list of Mojo::URL objects
+
+A Mojo port of L<Feed::Find> by Benjamin Trott. This method implements feed auto-discovery for finding syndication feeds, given a URL.
+Returns a Mojo::Promise, which is fulfilled with a list of feeds (Mojo::URL objects)
+
+=head2 parse
+
+  # parse an RSS/Atom feed
+  my $url = Mojo::URL->new('http://rss.slashdot.org/Slashdot/slashdot');
+  my $feed = Mojo::Feed->new->parse($url);
+
+  # parse a file
+  $feed2 = Mojo::Feed->new->parse('/downloads/foo.rss');
+
+A minimalist liberal RSS/Atom parser, using Mojo::DOM queries.
+
+Dates are parsed using L<HTTP::Date>.
+
+If parsing fails (for example, the parser was given an HTML page), the method will return undef.
+
+
+=head2 parse_opml
+
+  my @subscriptions = Mojo::Feed->parse_opml( 'mysubs.opml' );
+  foreach my $sub (@subscriptions) {
+    say 'RSS URL is: ',     $sub->{xmlUrl};
+    say 'Website URL is: ', $sub->{htmlUrl};
+    say 'categories: ', join ',', @{$sub->{categories}};
+  }
+
+Parse an OPML subscriptions file and return the list of feeds as an array of hashrefs.
+
+Each hashref will contain an array ref in the key 'categories' listing the folders (parent nodes) in the OPML tree the subscription item appears in.
+
+=head1 CREDITS
+
+Dotan Dimet
+
+Mario Domgoergen
+
+Some tests adapted from L<Feed::Find> and L<XML:Feed>, Feed autodiscovery adapted from L<Feed::Find>.
+
+
 
 =head1 LICENSE
 
