@@ -1,0 +1,6 @@
+name = "Mojo-Feed"
+# badges = ["travis"]
+authority="cpan:DOTAN"
+
+module_maker="ModuleBuildTiny"
+
