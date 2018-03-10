@@ -123,11 +123,15 @@ Returns a Mojo::Promise, which is fulfilled with a list of feeds (Mojo::URL obje
     # parse a file
     $feed2 = Mojo::Feed->new->parse('/downloads/foo.rss');
 
+    # parse a string
+    my $str = Mojo::File->new('atom.xml')->slurp;
+    $feed3 = Mojo::Feed->new->parse($str);
+
 A minimalist liberal RSS/Atom parser, using Mojo::DOM queries.
 
 Dates are parsed using [HTTP::Date](https://metacpan.org/pod/HTTP::Date).
 
-If parsing fails (for example, the parser was given an HTML page), the method will return undef.
+`parse()` will be called by `new()` if it is passed a single argument
 
 ## parse\_opml
 
