@@ -1,5 +1,5 @@
 name = "Mojo-Feed"
-# badges = ["travis"]
+badges = ["travis"]
 authority="cpan:DOTAN"
 
 module_maker="ModuleBuildTiny"

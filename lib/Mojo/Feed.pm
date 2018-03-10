@@ -504,6 +504,19 @@ Time in epoch seconds (may be filled with pubDate, dc:date, created, issued, upd
 L<Mojo::Feed> inherits all methods from
 L<Mojo::Base> and implements the following new ones.
 
+=head2 new
+
+  my $feed = Mojo::Feed->new;
+  $feed->parse('atom.xml');
+
+  my $feed = Mojo::Feed->new('atom.xml');
+  my $feed = Mojo::Feed->new('http://example.com/atom.xml');
+  my $str = Mojo::File->new('atom.xml')->slurp;
+  my $feed = Mojo::Feed->new($str);
+  my $feed = Mojo::Feed->new(ua => Mojo::UserAgent->new);
+
+Construct a new L<Mojo::Feed> object. If passed a single argument, will call parse() with that argument. Multiple arguments will be used to initialize attributes, as in L<Mojo::Base>.
+
 =head2 discover
 
   my @feeds;
