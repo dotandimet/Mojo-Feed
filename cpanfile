@@ -1,4 +1,4 @@
-requires 'perl', '5.008001';
+requires 'perl', '5.010';
 requires 'Mojolicious', '7.52';
 requires 'HTTP::Date', '6.02';
 requires 'Time::Zone', '2.2';

@@ -480,7 +480,7 @@ web page URL associated with the feed
 
 =head2  items
 
-L<Mojo::Collection> of L<Mojo::Feed::Item> objects representingfeed news items
+L<Mojo::Collection> of L<Mojo::Feed::Item> objects representing feed news items
 
 =head2  subtitle
 
@@ -570,7 +570,7 @@ Dotan Dimet
 
 Mario Domgoergen
 
-Some tests adapted from L<Feed::Find> and L<XML:Feed>, Feed autodiscovery adapted from L<Feed::Find>.
+Some tests adapted from L<Feed::Find> and L<XML:Feed>, Feed auto-discovery adapted from L<Feed::Find>.
 
 
 
