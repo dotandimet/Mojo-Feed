@@ -45,7 +45,7 @@
             "HTTP::Date" : "6.02",
             "Mojolicious" : "7.52",
             "Time::Zone" : "2.2",
-            "perl" : "5.008001"
+            "perl" : "5.010"
          }
       },
       "test" : {

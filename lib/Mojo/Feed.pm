@@ -414,6 +414,8 @@ __END__
 
 =encoding utf-8
 
+=for stopwords tagline pubDate dc:date
+
 =head1 NAME
 
 Mojo::Feed - Mojo::DOM-based parsing of RSS & Atom feeds

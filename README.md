@@ -64,7 +64,7 @@ web page URL associated with the feed
 
 ## items
 
-[Mojo::Collection](https://metacpan.org/pod/Mojo::Collection) of [Mojo::Feed::Item](https://metacpan.org/pod/Mojo::Feed::Item) objects representingfeed news items
+[Mojo::Collection](https://metacpan.org/pod/Mojo::Collection) of [Mojo::Feed::Item](https://metacpan.org/pod/Mojo::Feed::Item) objects representing feed news items
 
 ## subtitle
 
@@ -152,7 +152,7 @@ Dotan Dimet
 
 Mario Domgoergen
 
-Some tests adapted from [Feed::Find](https://metacpan.org/pod/Feed::Find) and [XML:Feed](XML:Feed), Feed autodiscovery adapted from [Feed::Find](https://metacpan.org/pod/Feed::Find).
+Some tests adapted from [Feed::Find](https://metacpan.org/pod/Feed::Find) and [XML:Feed](XML:Feed), Feed auto-discovery adapted from [Feed::Find](https://metacpan.org/pod/Feed::Find).
 
 # LICENSE
 

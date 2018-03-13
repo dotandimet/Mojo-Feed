@@ -38,15 +38,15 @@ L<Mojo::Feed::Item> implements the following attributes.
 
 =head2  content
 
-May be filled with content:encoded, xhtml:body or description fields
+May be filled with C<content:encoded>, C<xhtml:body> or C<description> fields
 
 =head2  id
 
-Will be equal to link or guid if it is undefined and either of those fields exists
+Will be equal to C<link> or C<guid> if it is undefined and either of those fields exists
 
 =head2  description
 
-Optional - usually a shorter form of the content (may be filled with summary if description is missing)
+Optional - usually a shorter form of the content (may be filled with C<summary> if description is missing)
 
 =head2  guid
 
@@ -54,15 +54,15 @@ Optional
 
 =head2  published
 
-Time in epoch seconds (may be filled with pubDate, dc:date, created, issued, updated or modified)
+Time in epoch seconds (may be filled with C<pubDate>, C<dc:date>, C<created>, C<issued>, C<updated> or C<modified>)
 
 =head2  author
 
-May be filled from author or dc:creator
+May be filled from C<author> or C<dc:creator>
 
 =head2  tags
 
-Optional - array ref of tags, categories or dc:subjects.
+Optional - array ref of C<tags>, C<categories> or C<dc:subjects>.
 
 =head2  _raw
 
