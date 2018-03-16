@@ -22,14 +22,13 @@ my %alternatives = (
   id     => ['guid', 'link'],
 );
 
-sub at_with_namespace {
+sub _at {
   my ($self, $field) = @_;
-  if (my $p = $self->dom->at($field)) {
-    my $tag = $p->tag;
+  return $self->dom->find($field)->first( sub {
+    my $tag = $_->tag;
     $tag =~ s/:/\\:/;
-    return $p if $tag eq $field;
-  }
-  return;
+    return $tag eq $field;
+  });
 }
 
 foreach my $k (qw(title link content id description guid published author)) {
@@ -39,7 +38,7 @@ foreach my $k (qw(title link content id description guid published author)) {
 
     my $p;
     for my $field ($k, @alternatives) {
-      $p = $self->at_with_namespace($field);
+      $p = $self->_at($field);
       last if $p;
     }
 
