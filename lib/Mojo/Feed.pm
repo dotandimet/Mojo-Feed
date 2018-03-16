@@ -68,19 +68,19 @@ sub load {
   }
 }
 
-sub text {
+has text => sub {
   my $self    = shift;
   my $body    = $self->body;
   my $charset = $self->charset || $self->default_charset;
   return $charset ? decode($charset, $body) // $body : $body;
-}
+};
 
-sub dom {
+has dom => sub {
   my ($self) = @_;
   my $text = $self->text;
   return undef unless ($text);
   return Mojo::DOM->new($text);
-}
+};
 
 
 sub parse {
@@ -169,105 +169,6 @@ sub parse_feed_channel {
 
   # return (keys %info) ? \%info : undef;
   return \%info;
-}
-
-sub parse_feed_item {
-  my ($item) = @_;
-  my %h;
-  foreach my $k (
-    qw(title id summary guid content description content\:encoded xhtml\:body dc\:creator author),
-    @time_fields
-    )
-  {
-    my $p = $item->at($k);
-    if ($p) {
-
-      # skip namespaced items - like itunes:summary - unless explicitly
-      # searched:
-      next
-        if ($p->tag =~ /\:/
-        && $k ne 'content\:encoded'
-        && $k ne 'xhtml\:body'
-        && $k ne 'dc\:date'
-        && $k ne 'dc\:creator');
-      $h{$k} = $p->text || $p->content;
-      if ($k eq 'author' && $p->at('name')) {
-        $h{$k} = $p->at('name')->text;
-      }
-      if ($is_time_field{$k}) {
-        $h{$k} = str2time($h{$k});
-      }
-    }
-  }
-
-  $item->find('enclosure')->each(
-    sub {
-        push @{ $h{enclosures} }, shift->attr;
-    }
-  );
-
-  # let's handle links seperately, because ATOM loves these buggers:
-  $item->find('link')->each(sub {
-    my $l = shift;
-    if ($l->attr('href')) {
-      if ( $l->attr('rel' ) && $l->attr('rel') eq 'enclosure' ) {
-                push @{$h{enclosures}}, {
-                    url    => $l->attr('href'),
-                    type   => $l->attr('type'),
-                    length => $l->attr('length')
-                };
-      }
-      elsif (!$l->attr('rel') || $l->attr('rel') eq 'alternate') {
-        $h{'link'} = $l->attr('href');
-      }
-    }
-    else {
-      if ($l->text =~ /\w+/) {
-        $h{'link'} = $l->text;    # simple link
-      }
-
-#         else { # we have an empty link element with no 'href'. :-(
-#           $h{'link'} = $1 if ($l->next->text =~ m/^(http\S+)/);
-#         }
-    }
-  });
-
-  # find tags:
-  my @tags;
-  $item->find('category, dc\:subject')
-    ->each(sub { push @tags, $_[0]->text || $_[0]->attr('term') });
-  if (@tags) {
-    $h{'tags'} = \@tags;
-  }
-  #
-  # normalize fields:
-  my @replace = (
-    'content\:encoded' => 'content',
-    'xhtml\:body'      => 'content',
-    'summary'          => 'description',
-    'pubDate'          => 'published',
-    'dc\:date'         => 'published',
-    'created'          => 'published',
-    'issued'           => 'published',
-    'updated'          => 'published',
-    'modified'         => 'published',
-    'dc\:creator'      => 'author'
-
-      #    'guid'             => 'link'
-  );
-  while (my ($old, $new) = splice(@replace, 0, 2)) {
-    if ($h{$old} && !$h{$new}) {
-      $h{$new} = delete $h{$old};
-    }
-  }
-  my %copy = ('description' => 'content', link => 'id', guid => 'id');
-  while (my ($fill, $required) = each %copy) {
-    if ($h{$fill} && !$h{$required}) {
-      $h{$required} = $h{$fill};
-    }
-  }
-  $h{"_raw"} = $item->to_string;
-  return \%h;
 }
 
 # discover - get RSS/Atom feed URL from argument.
@@ -367,16 +268,9 @@ sub parse_opml {
   return (values %subscriptions);
 }
 
-sub items {
-  my ($self) = shift;
-  return Mojo::Collection->new(
-    map {
-   #    $_->{published} = Mojo::Date->new($_->{published}) if ($_->{published});
-      Mojo::Feed::Item->new(%$_);
-    } @{$self->root->{'items'}}
-  );
-}
-
+has items => sub {
+	shift->dom->find('item')->map( sub{  Mojo::Feed::Item->new( dom => $_ ) } );
+};
 
 sub title {
   return shift->root->{title} unless (@_ > 1);

@@ -1,9 +1,123 @@
 package Mojo::Feed::Item;
 use Mojo::Base '-base';
 has [qw(title link content id description guid published author _raw)];
-has tags => sub { [] };
 
-sub summary { return shift->description }
+has tags => sub {
+  $item->find('category, dc\:subject')
+    ->each(sub { $_[0]->text || $_[0]->attr('term') });
+};
+
+has 'dom';
+
+has summary => sub { shift->description };
+
+our @time_fields
+  = (qw(pubDate published created issued updated modified dc\:date));
+our %is_time_field = map { $_ => 1 } @time_fields;
+
+
+-  foreach my $k (
+-    qw(title id summary guid content description content\:encoded xhtml\:body dc\:creator author),
+-    @time_fields
+-    )
+-  {
+-    my $p = $item->at($k);
+-    if ($p) {
+-
+-      # skip namespaced items - like itunes:summary - unless explicitly
+-      # searched:
+-      next
+-        if ($p->tag =~ /\:/
+-        && $k ne 'content\:encoded'
+-        && $k ne 'xhtml\:body'
+-        && $k ne 'dc\:date'
+-        && $k ne 'dc\:creator');
+-      $h{$k} = $p->text || $p->content;
+-      if ($k eq 'author' && $p->at('name')) {
+-        $h{$k} = $p->at('name')->text;
+-      }
+-      if ($is_time_field{$k}) {
+-        $h{$k} = str2time($h{$k});
+-      }
+-    }
+-  }
+
+has enclosures => sub {
+    my $self = shift;
+    my @enclosures;
+    $self->dom->find('enclosure')->each(
+        sub {
+            push @enclosures, shift->attr;
+        }
+    );
+    $self->dom->find('link')->each(
+        sub {
+            my $l = shift;
+            if (   $l->attr('href')
+                && $l->attr('rel')
+                && $l->attr('rel') eq 'enclosure' )
+            {
+                push @enclosures,
+                  {
+                    url    => $l->attr('href'),
+                    type   => $l->attr('type'),
+                    length => $l->attr('length')
+                  };
+            }
+        }
+    );
+    return Mojo::Collection->new(
+        map { Mojo::Feed::Enclosure->new($_) } @enclosures;
+    );
+};
+
+-  # let's handle links seperately, because ATOM loves these buggers:
+-  $item->find('link')->each(sub {
+-    my $l = shift;
+-    if ($l->attr('href')) {
+-      elsif (!$l->attr('rel') || $l->attr('rel') eq 'alternate') {
+-        $h{'link'} = $l->attr('href');
+-      }
+-    }
+-    else {
+-      if ($l->text =~ /\w+/) {
+-        $h{'link'} = $l->text;    # simple link
+-      }
+-
+-    }
+-  });
+
+-  #
+-  # normalize fields:
+-  my @replace = (
+-    'content\:encoded' => 'content',
+-    'xhtml\:body'      => 'content',
+-    'summary'          => 'description',
+-    'pubDate'          => 'published',
+-    'dc\:date'         => 'published',
+-    'created'          => 'published',
+-    'issued'           => 'published',
+-    'updated'          => 'published',
+-    'modified'         => 'published',
+-    'dc\:creator'      => 'author'
+-
+-      #    'guid'             => 'link'
+-  );
+-  while (my ($old, $new) = splice(@replace, 0, 2)) {
+-    if ($h{$old} && !$h{$new}) {
+-      $h{$new} = delete $h{$old};
+-    }
+-  }
+-  my %copy = ('description' => 'content', link => 'id', guid => 'id');
+-  while (my ($fill, $required) = each %copy) {
+-    if ($h{$fill} && !$h{$required}) {
+-      $h{$required} = $h{$fill};
+-    }
+-  }
+-  $h{"_raw"} = $item->to_string;
+-  return \%h;
+-}
+-
 
 1;
 __END__
