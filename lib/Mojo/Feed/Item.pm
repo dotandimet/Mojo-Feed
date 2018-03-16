@@ -1,6 +1,5 @@
 package Mojo::Feed::Item;
 use Mojo::Base '-base';
-use Mojo::Util 'monkey_patch';
 use Mojo::Feed::Item::Enclosure;
 use HTTP::Date 'str2time';
 has [qw(title link content id description guid published author)];
@@ -23,15 +22,15 @@ my %alternatives = (
   id     => ['guid', 'link'],
 );
 
-monkey_patch 'Mojo::DOM' => at_with_namespace => sub {
-  my ($dom, $field) = @_;
-  if (my $p = $dom->at($field)) {
+sub at_with_namespace {
+  my ($self, $field) = @_;
+  if (my $p = $self->dom->at($field)) {
     my $tag = $p->tag;
     $tag =~ s/:/\\:/;
     return $p if $tag eq $field;
   }
   return;
-};
+}
 
 foreach my $k (qw(title link content id description guid published author)) {
   has $k => sub {
@@ -40,7 +39,7 @@ foreach my $k (qw(title link content id description guid published author)) {
 
     my $p;
     for my $field ($k, @alternatives) {
-      $p = $self->dom->at_with_namespace($field);
+      $p = $self->at_with_namespace($field);
       last if $p;
     }
 
