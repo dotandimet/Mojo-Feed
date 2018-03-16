@@ -107,15 +107,8 @@ sub parse_feed_dom {
   my ($self)  = @_;
   my $dom     = $self->dom;
   my $feed    = $self->parse_feed_channel();    # Feed properties
-  my $items   = $dom->find('item');
   my $entries = $dom->find('entry');            # Atom
   my $res     = [];
-  foreach my $item ($items->each, $entries->each) {
-    push @$res, parse_feed_item($item);
-  }
-  if (@$res) {
-    $feed->{'items'} = $res;
-  }
   $self->root($feed);
   return $feed;
 }
@@ -179,17 +172,15 @@ sub discover {
   my $url  = shift;
 
 #  $self->ua->max_redirects(5)->connect_timeout(30);
-  return
-  $self->ua->get_p( $url )
-           ->catch(sub { my ($err) = shift; die "Connection Error: $err" })
-           ->then(sub {
-                my ($tx) = @_;
-                my @feeds;
-                if ($tx->success && $tx->res->code == 200) {
-                    @feeds = _find_feed_links($self, $tx->req->url, $tx->res);
-                }
-              return (@feeds);
-            });
+  return $self->ua->get_p($url)
+    ->catch(sub { my ($err) = shift; die "Connection Error: $err" })->then(sub {
+    my ($tx) = @_;
+    my @feeds;
+    if ($tx->success && $tx->res->code == 200) {
+      @feeds = _find_feed_links($self, $tx->req->url, $tx->res);
+    }
+    return (@feeds);
+    });
 }
 
 sub _find_feed_links {
@@ -269,7 +260,8 @@ sub parse_opml {
 }
 
 has items => sub {
-	shift->dom->find('item')->map( sub{  Mojo::Feed::Item->new( dom => $_ ) } );
+  shift->dom->find('item, entry')
+    ->map(sub { Mojo::Feed::Item->new(dom => $_) });
 };
 
 sub title {
