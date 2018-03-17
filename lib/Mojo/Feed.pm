@@ -107,8 +107,6 @@ sub parse_feed_dom {
   my ($self)  = @_;
   my $dom     = $self->dom;
   my $feed    = $self->parse_feed_channel();    # Feed properties
-  my $entries = $dom->find('entry');            # Atom
-  my $res     = [];
   $self->root($feed);
   return $feed;
 }
