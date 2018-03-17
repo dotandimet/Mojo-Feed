@@ -256,10 +256,10 @@ sub parse_opml {
   return (values %subscriptions);
 }
 
-has items => sub {
+sub items {
   shift->dom->find('item, entry')
     ->map(sub { Mojo::Feed::Item->new(dom => $_) });
-};
+}
 
 sub title {
   return shift->root->{title} unless (@_ > 1);
