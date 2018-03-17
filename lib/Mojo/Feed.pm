@@ -68,20 +68,19 @@ sub load {
   }
 }
 
-has text => sub {
+sub text {
   my $self    = shift;
   my $body    = $self->body;
   my $charset = $self->charset || $self->default_charset;
   return $charset ? decode($charset, $body) // $body : $body;
-};
+}
 
-has dom => sub {
+sub dom {
   my ($self) = @_;
   my $text = $self->text;
   return undef unless ($text);
   return Mojo::DOM->new($text);
-};
-
+}
 
 sub parse {
   my ($self, $xml) = @_;
