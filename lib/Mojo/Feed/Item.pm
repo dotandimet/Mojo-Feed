@@ -13,46 +13,43 @@ has 'dom';
 
 has summary => sub { shift->description };
 
-my %alternatives = (
-  content     => ['content\:encoded', 'xhtml\:body', 'description'],
-  description => ['summary'],
-  published =>
-    ['pubDate', 'dc\:date', 'created', 'issued', 'updated', 'modified'],
-  author => ['dc\:creator'],
-  id     => ['guid', 'link'],
+my %selector = (
+  content => ['content', 'content\:encoded', 'xhtml\:body', 'description'],
+  description => ['description', 'summary'],
+  published   => [
+    'published', 'pubDate', 'dc\:date', 'created',
+    'issued',    'updated', 'modified'
+  ],
+  author => ['author', 'dc\:creator'],
+  id     => ['id',     'guid', 'link'],
 );
 
 sub _at {
-  my ($self, $field) = @_;
-  return $self->dom->find($field)->first( sub {
+  my ($self, $selector) = @_;
+  return $self->dom->find($selector)->first(sub {
     my $tag = $_->tag;
     $tag =~ s/:/\\:/;
-    return $tag eq $field;
+    return $tag eq $selector;
   });
 }
 
 foreach my $k (qw(title link content id description guid published author)) {
   has $k => sub {
     my $self = shift;
-    my @alternatives = @{$alternatives{$k} || []};
-
-    my $p;
-    for my $field ($k, @alternatives) {
-      $p = $self->_at($field);
-      last if $p;
-    }
-
-    if ($p) {
-      if ($k eq 'author' && $p->at('name')) {
-        return $p->at('name')->text;
+    for my $selector (@{$selector{$k} || [$k]}) {
+      if ( my $p = $self->_at($selector) ) {
+        if ($k eq 'author' && $p->at('name')) {
+          return $p->at('name')->text;
+        }
+        my $text = $p->text || $p->content;
+        if ($k eq 'published') {
+          return str2time($text);
+        }
+        return $text;
       }
-      my $text = $p->text || $p->content;
-      if ($k eq 'published') {
-        return str2time($text);
-      }
-      return $text;
     }
-    }
+    return;
+  };
 }
 
 has enclosures => sub {
