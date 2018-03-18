@@ -82,7 +82,6 @@ sub dom {
   return Mojo::DOM->new($text);
 }
 
-
 sub parse {
   my ($self, $xml) = @_;
   if ($xml) {
@@ -107,15 +106,6 @@ sub parse_feed_dom {
   my ($self)  = @_;
   my $dom     = $self->dom;
   my $feed    = $self->parse_feed_channel();    # Feed properties
-  my $items   = $dom->find('item');
-  my $entries = $dom->find('entry');            # Atom
-  my $res     = [];
-  foreach my $item ($items->each, $entries->each) {
-    push @$res, parse_feed_item($item);
-  }
-  if (@$res) {
-    $feed->{'items'} = $res;
-  }
   $self->root($feed);
   return $feed;
 }
@@ -171,105 +161,6 @@ sub parse_feed_channel {
   return \%info;
 }
 
-sub parse_feed_item {
-  my ($item) = @_;
-  my %h;
-  foreach my $k (
-    qw(title id summary guid content description content\:encoded xhtml\:body dc\:creator author),
-    @time_fields
-    )
-  {
-    my $p = $item->at($k);
-    if ($p) {
-
-      # skip namespaced items - like itunes:summary - unless explicitly
-      # searched:
-      next
-        if ($p->tag =~ /\:/
-        && $k ne 'content\:encoded'
-        && $k ne 'xhtml\:body'
-        && $k ne 'dc\:date'
-        && $k ne 'dc\:creator');
-      $h{$k} = $p->text || $p->content;
-      if ($k eq 'author' && $p->at('name')) {
-        $h{$k} = $p->at('name')->text;
-      }
-      if ($is_time_field{$k}) {
-        $h{$k} = str2time($h{$k});
-      }
-    }
-  }
-
-  $item->find('enclosure')->each(
-    sub {
-        push @{ $h{enclosures} }, shift->attr;
-    }
-  );
-
-  # let's handle links seperately, because ATOM loves these buggers:
-  $item->find('link')->each(sub {
-    my $l = shift;
-    if ($l->attr('href')) {
-      if ( $l->attr('rel' ) && $l->attr('rel') eq 'enclosure' ) {
-                push @{$h{enclosures}}, {
-                    url    => $l->attr('href'),
-                    type   => $l->attr('type'),
-                    length => $l->attr('length')
-                };
-      }
-      elsif (!$l->attr('rel') || $l->attr('rel') eq 'alternate') {
-        $h{'link'} = $l->attr('href');
-      }
-    }
-    else {
-      if ($l->text =~ /\w+/) {
-        $h{'link'} = $l->text;    # simple link
-      }
-
-#         else { # we have an empty link element with no 'href'. :-(
-#           $h{'link'} = $1 if ($l->next->text =~ m/^(http\S+)/);
-#         }
-    }
-  });
-
-  # find tags:
-  my @tags;
-  $item->find('category, dc\:subject')
-    ->each(sub { push @tags, $_[0]->text || $_[0]->attr('term') });
-  if (@tags) {
-    $h{'tags'} = \@tags;
-  }
-  #
-  # normalize fields:
-  my @replace = (
-    'content\:encoded' => 'content',
-    'xhtml\:body'      => 'content',
-    'summary'          => 'description',
-    'pubDate'          => 'published',
-    'dc\:date'         => 'published',
-    'created'          => 'published',
-    'issued'           => 'published',
-    'updated'          => 'published',
-    'modified'         => 'published',
-    'dc\:creator'      => 'author'
-
-      #    'guid'             => 'link'
-  );
-  while (my ($old, $new) = splice(@replace, 0, 2)) {
-    if ($h{$old} && !$h{$new}) {
-      $h{$new} = delete $h{$old};
-    }
-  }
-  my %copy = ('description' => 'content', link => 'id', guid => 'id');
-  while (my ($fill, $required) = each %copy) {
-    if ($h{$fill} && !$h{$required}) {
-      $h{$required} = $h{$fill};
-    }
-  }
-  $h{"_raw"} = $item->to_string;
-  return \%h;
-}
-
 # discover - get RSS/Atom feed URL from argument.
 # Code adapted to use Mojolicious from Feed::Find by Benjamin Trott
 # Any stupid mistakes are my own
@@ -278,17 +169,15 @@ sub discover {
   my $url  = shift;
 
 #  $self->ua->max_redirects(5)->connect_timeout(30);
-  return
-  $self->ua->get_p( $url )
-           ->catch(sub { my ($err) = shift; die "Connection Error: $err" })
-           ->then(sub {
-                my ($tx) = @_;
-                my @feeds;
-                if ($tx->success && $tx->res->code == 200) {
-                    @feeds = _find_feed_links($self, $tx->req->url, $tx->res);
-                }
-              return (@feeds);
-            });
+  return $self->ua->get_p($url)
+    ->catch(sub { my ($err) = shift; die "Connection Error: $err" })->then(sub {
+    my ($tx) = @_;
+    my @feeds;
+    if ($tx->success && $tx->res->code == 200) {
+      @feeds = _find_feed_links($self, $tx->req->url, $tx->res);
+    }
+    return (@feeds);
+    });
 }
 
 sub _find_feed_links {
@@ -368,15 +257,9 @@ sub parse_opml {
 }
 
 sub items {
-  my ($self) = shift;
-  return Mojo::Collection->new(
-    map {
-   #    $_->{published} = Mojo::Date->new($_->{published}) if ($_->{published});
-      Mojo::Feed::Item->new(%$_);
-    } @{$self->root->{'items'}}
-  );
+  shift->dom->find('item, entry')
+    ->map(sub { Mojo::Feed::Item->new(dom => $_) });
 }
-
 
 sub title {
   return shift->root->{title} unless (@_ > 1);

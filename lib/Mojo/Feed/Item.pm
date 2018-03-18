@@ -1,11 +1,102 @@
 package Mojo::Feed::Item;
 use Mojo::Base '-base';
-has [qw(title link content id description guid published author _raw)];
-has tags => sub { [] };
+use Mojo::Feed::Item::Enclosure;
+use HTTP::Date 'str2time';
+has [qw(title link content id description guid published author)];
 
-sub summary { return shift->description }
+has tags => sub {
+  shift->dom->find('category, dc\:subject')
+    ->map(sub { $_[0]->text || $_[0]->attr('term') });
+};
+
+has 'dom';
+
+has summary => sub { shift->description };
+
+my %selector = (
+  content => ['content', 'content\:encoded', 'xhtml\:body', 'description'],
+  description => ['description', 'summary'],
+  published   => [
+    'published', 'pubDate', 'dc\:date', 'created',
+    'issued',    'updated', 'modified'
+  ],
+  author => ['author', 'dc\:creator'],
+  id     => ['id',     'guid', 'link'],
+);
+
+sub _at {
+  my ($self, $selector) = @_;
+  return $self->dom->find($selector)->first(sub {
+    my $tag = $_->tag;
+    $tag =~ s/:/\\:/;
+    return $tag eq $selector;
+  });
+}
+
+foreach my $k (qw(title link content id description guid published author)) {
+  has $k => sub {
+    my $self = shift;
+    for my $selector (@{$selector{$k} || [$k]}) {
+      if ( my $p = $self->_at($selector) ) {
+        if ($k eq 'author' && $p->at('name')) {
+          return $p->at('name')->text;
+        }
+        my $text = $p->text || $p->content;
+        if ($k eq 'published') {
+          return str2time($text);
+        }
+        return $text;
+      }
+    }
+    return;
+  };
+}
+
+has enclosures => sub {
+  my $self = shift;
+  my @enclosures;
+  $self->dom->find('enclosure')->each(sub {
+    push @enclosures, shift->attr;
+  });
+  $self->dom->find('link')->each(sub {
+    my $l = shift;
+    if ($l->attr('href') && $l->attr('rel') && $l->attr('rel') eq 'enclosure') {
+      push @enclosures,
+        {
+        url    => $l->attr('href'),
+        type   => $l->attr('type'),
+        length => $l->attr('length')
+        };
+    }
+  });
+  return Mojo::Collection->new(map { Mojo::Feed::Item::Enclosure->new($_) }
+      @enclosures);
+};
+
+has link => sub {
+
+  # let's handle links seperately, because ATOM loves these buggers:
+  my $link;
+  shift->dom->find('link')->each(sub {
+    my $l = shift;
+    if ($l->attr('href')
+      && (!$l->attr('rel') || $l->attr('rel') eq 'alternate'))
+    {
+      $link = $l->attr('href');
+    }
+    else {
+      if ($l->text =~ /\w+/) {
+        $link = $l->text;    # simple link
+      }
+    }
+  });
+  return $link;
+};
+
+has _raw => sub { shift->dom->to_string };
 
 1;
+
 __END__
 
 =encoding utf-8
