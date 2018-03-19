@@ -31,11 +31,9 @@ my %selector = (
 
 foreach my $k (keys %selector) {
   has $k => sub {
-    my $self    = shift;
-    my $channel = $self->dom->at('channel, feed');
-    return if !$channel;
+    my $self = shift;
     for my $selector (@{$selector{$k} || [$k]}) {
-      if (my $p = $channel->children($selector)->first) {
+      if (my $p = $self->dom->at("channel > $selector, feed > $selector")) {
         if ($k eq 'author' && $p->at('name')) {
           return $p->at('name')->text;
         }
