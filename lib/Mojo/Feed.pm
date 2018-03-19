@@ -4,28 +4,16 @@ use Mojo::Base '-base';
 our $VERSION = "0.01";
 
 use Mojo::Feed::Item;
-
-use Mojo::Util qw(decode);
 use Mojo::DOM;
 use HTTP::Date;
 
-has default_charset => 'UTF-8';
-has charset => sub { shift->default_charset };
-
 has body => '';
-
-has text => sub {
-  my $self    = shift;
-  my $body    = $self->body;
-  my $charset = $self->charset || $self->default_charset;
-  return $charset ? decode($charset, $body) // $body : $body;
-};
 
 has dom => sub {
   my ($self) = @_;
-  my $text = $self->text;
-  return undef unless ($text);
-  return Mojo::DOM->new($text);
+  my $body = $self->body;
+  return if !$body;
+  return Mojo::DOM->new($body);
 };
 
 my %selector = (

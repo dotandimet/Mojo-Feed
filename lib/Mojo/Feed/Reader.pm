@@ -17,10 +17,11 @@ our @feed_types = (
 our %is_feed = map { $_ => 1 } @feed_types;
 
 has ua => sub { Mojo::UserAgent->new };
+has charset => 'UTF-8';
 
 sub parse {
-  my ($self, $xml) = @_;
-  my ($body, $charset);
+  my ($self, $xml, $charset) = @_;
+  my $body;
   if ($xml) {
     if ($xml =~ /^\</) {
       $body = $xml;
@@ -36,7 +37,9 @@ sub parse {
       ...;
     }
   }
-  return Mojo::Feed->new(body => $body, charset => $charset);
+  $charset ||= $self->charset;
+  $body = $charset ? decode($charset, $body) // $body : $body;
+  return Mojo::Feed->new(body => $body);
 }
 
 sub load {

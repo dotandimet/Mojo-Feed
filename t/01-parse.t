@@ -74,7 +74,6 @@ for my $file ( sort keys %Feeds ) {
     #  $dt->set_time_zone('UTC');
     ok( defined( $feed->published ), 'feed published defined' );
     is( time2isoz($dt), '2004-05-30 07:39:57Z' );
-    diag $file;
     is( $feed->author, 'Melody', 'feed author' );
 
     my $entries = $feed->items;
