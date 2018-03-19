@@ -10,7 +10,7 @@ use Mojo::DOM;
 use HTTP::Date;
 
 has default_charset => 'UTF-8';
-has charset         => sub { shift->default_charset };
+has charset => sub { shift->default_charset };
 
 has body => '';
 
@@ -34,19 +34,20 @@ my %selector = (
     'published', 'pubDate', 'dc\:date', 'created',
     'issued',    'updated', 'modified'
   ],
-  author => ['author', 'dc\:creator', 'webmaster'],
-  title     => [ 'title' ],
-  tagline     => [ 'tagline' ],
-  subtitle     => ['subtitle'],
-  htmlURL => [ 'link:not([rel])', 'link[rel=alternate]' ],
+  author   => ['author', 'dc\:creator', 'webMaster'],
+  title    => ['title'],
+  tagline  => ['tagline'],
+  subtitle => ['subtitle'],
+  html_url => ['link:not([rel])', 'link[rel=alternate]'],
 );
 
-foreach my $k ( keys %selector ) {
+foreach my $k (keys %selector) {
   has $k => sub {
-    my $self = shift;
-    my $channel = shift->dom->at('channel');
+    my $self    = shift;
+    my $channel = $self->dom->at('channel, feed');
+    return if !$channel;
     for my $selector (@{$selector{$k} || [$k]}) {
-      if ( my $p = $channel->at($selector) ) {
+      if (my $p = $channel->children($selector)->first) {
         if ($k eq 'author' && $p->at('name')) {
           return $p->at('name')->text;
         }

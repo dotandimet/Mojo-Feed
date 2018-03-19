@@ -3,13 +3,13 @@ use Mojolicious::Lite;
 
 use Test::More;
 
-use Mojo::Feed;
+use Mojo::Feed::Reader;
 
 plan tests => 1;    # but a good one
 
 get '/' => sub { shift->render( text => "Hello!" ) };
 
-my $fr = Mojo::Feed->new();
+my $fr = Mojo::Feed::Reader->new;
 $fr->ua->max_redirects(5);
 $fr->discover("http://corky.net")->then(sub { my ($feed) = @_;
 my $res = $fr->parse($feed);

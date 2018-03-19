@@ -1,12 +1,12 @@
 use strict;
 use Mojo::Base -strict;
 
-use Mojo::Feed;
+use Mojo::Feed::Reader;
 
 use HTTP::Date qw(time2isoz);
 use Test::More;
 
-my $feed = Mojo::Feed->new("t/samples/atom-full.xml");
+my $feed = Mojo::Feed::Reader->new->parse("t/samples/atom-full.xml");
 is $feed->title, 'Content Considered Harmful Atom Feed';
 is $feed->html_url, 'http://blog.jrock.us/', "link without rel";
 

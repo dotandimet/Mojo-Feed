@@ -1,8 +1,10 @@
 package Mojo::Feed::Reader;
 use Mojo::Base -base;
 
-
 use Mojo::UserAgent;
+use Mojo::Feed;
+use Mojo::File 'path';
+use Mojo::Util 'decode';
 use Carp qw(carp croak);
 use Scalar::Util qw(blessed);
 
@@ -14,63 +16,44 @@ our @feed_types = (
 );
 our %is_feed = map { $_ => 1 } @feed_types;
 
-has default_charset => 'UTF-8';
-has charset         => sub { shift->default_charset };
-has ua              => sub { Mojo::UserAgent->new };
-
-sub load {
-  my ($self) = shift;
-  my $tx = $self->ua->get($self->url);
-  if ($tx->success) {
-    $self->body($tx->res->body);
-    $self->charset($tx->res->content->charset);
-  }
-  else {
-    croak "Error getting feed from url ", $self->url, ": ",
-      (($tx->error) ? $tx->error->{message} : '');
-  }
-}
-
-sub text {
-  my $self    = shift;
-  my $body    = $self->body;
-  my $charset = $self->charset || $self->default_charset;
-  return $charset ? decode($charset, $body) // $body : $body;
-}
-
-sub dom {
-  my ($self) = @_;
-  my $text = $self->text;
-  return undef unless ($text);
-  return Mojo::DOM->new($text);
-}
+has ua => sub { Mojo::UserAgent->new };
 
 sub parse {
   my ($self, $xml) = @_;
+  my ($body, $charset);
   if ($xml) {
     if ($xml =~ /^\</) {
-      $self->body($xml);
+      $body = $xml;
     }
     elsif (-r $xml) {
-      $self->path(Mojo::File->new($xml));
-      $self->body($self->path->slurp);
+      $body = path($xml)->slurp;
     }
     elsif ($xml =~ /^https?\:/ || (ref $xml && ref $xml eq 'Mojo::URL')) {
-      $self->url((ref $xml) ? $xml->clone() : Mojo::URL->new($xml));
+      my $url = ((ref $xml) ? $xml->clone() : Mojo::URL->new($xml));
+      ($body, $charset) = $self->load($url);
     }
-    else { }
+    else {
+      ...;
+    }
   }
-  $self->load() if ($self->url);
-  $self->parse_feed_dom();
-  return $self;
+  return Mojo::Feed->new(body => $body, charset => $charset);
+}
+
+sub load {
+  my ($self, $url) = @_;
+  my $tx = $self->ua->get($url);
+  if (!$tx->success) {
+    croak "Error getting feed from url ", $url, ": ",
+      (($tx->error) ? $tx->error->{message} : '');
+  }
+  return ($tx->res->body, $tx->res->content->charset);
 }
 
 # discover - get RSS/Atom feed URL from argument.
 # Code adapted to use Mojolicious from Feed::Find by Benjamin Trott
 # Any stupid mistakes are my own
 sub discover {
-  my $self = shift;
-  my $url  = shift;
+  my ($self, $url) = @_;
 
 #  $self->ua->max_redirects(5)->connect_timeout(30);
   return $self->ua->get_p($url)
@@ -78,7 +61,7 @@ sub discover {
     my ($tx) = @_;
     my @feeds;
     if ($tx->success && $tx->res->code == 200) {
-      @feeds = _find_feed_links($self, $tx->req->url, $tx->res);
+      @feeds = $self->_find_feed_links($tx->req->url, $tx->res);
     }
     return (@feeds);
     });
@@ -117,11 +100,10 @@ sub _find_feed_links {
     })->each(sub {
       push @feeds, Mojo::URL->new($_->attr('href'))->to_abs($base);
     });
-    unless (@feeds)
-    {    # call me crazy, but maybe this is just a feed served as HTML?
-      my $body = $res->body;
-      $self->parse($body);
-      if (%{$self->root}) {
+
+    # call me crazy, but maybe this is just a feed served as HTML?
+    unless (@feeds) {
+      if ($self->parse($res->body)->description) {
         push @feeds, Mojo::URL->new($url)->to_abs;
       }
     }
