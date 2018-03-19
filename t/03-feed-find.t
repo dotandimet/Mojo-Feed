@@ -8,7 +8,7 @@ use Mojo::File;
 
 use Mojolicious::Lite;
 
-use Mojo::Feed;
+use Mojo::Feed::Reader;
 
 get '/floo' => sub { shift->redirect_to('/link1.html'); };
 
@@ -31,7 +31,7 @@ get '/monks' => sub {
 };
 
 my $t            = Test::Mojo->new(app);
-my $feedr        = Mojo::Feed->new->ua( $t->ua );
+my $feedr        = Mojo::Feed::Reader->new->ua( $t->ua );
 my $abs_feed_url = $t->ua->server->url->clone->path('atom.xml')->to_abs;
 
 # feed

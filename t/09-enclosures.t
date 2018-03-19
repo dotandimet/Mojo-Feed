@@ -2,7 +2,7 @@ use Mojo::Base -strict;
 
 use Test::More;
 use Mojo::File 'path';
-use Mojo::Feed;
+use Mojo::Feed::Reader;
 
 use FindBin;
 
@@ -45,9 +45,10 @@ my %test_results = (
 
 my $samples = path($FindBin::Bin)->child('samples');
 
+my $feedr = Mojo::Feed::Reader->new;
 
 while (my ($file, $result) = each %test_results) {
-  my $feed = Mojo::Feed->new($samples->child($file));
+  my $feed = $feedr->parse($samples->child($file));
   is_deeply($feed->items->[0]->enclosures, $result);
 }
 

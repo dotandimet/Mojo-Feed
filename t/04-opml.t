@@ -7,7 +7,7 @@ use Mojo::Util qw(dumper);
 use FindBin;
 use Mojolicious::Lite;
 
-use Mojo::Feed;
+use Mojo::Feed::Reader;
 
 my $sample_dir = File::Spec->catdir( $FindBin::Bin, 'samples' );
 push @{ app->static->paths }, $sample_dir;
@@ -20,10 +20,12 @@ my %files = (
     rssowl  => File::Spec->catdir( $sample_dir, 'rssowl.opml' )
 );
 
+my $feedr = Mojo::Feed::Reader->new;
+
 for my $type (qw(google_reader sputnik rssowl)) {
     my $opml = $files{$type};
     note("testing with $type export");
-    my @feeds = Mojo::Feed->new->parse_opml($opml);
+    my @feeds = $feedr->parse_opml($opml);
     is( scalar @feeds, 294, 'got 294 feeds' );
     ok( defined $feeds[0]{xmlUrl},   "xmlUrl defined" );
     ok( defined $feeds[293]{xmlUrl}, "xmlUrl defined" );
