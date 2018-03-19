@@ -87,13 +87,17 @@ Date parsing used L<HTTP::Date>.
 
 L<Mojo::Feed> implements the following attributes.
 
-=head2 text
 =head2 body
+
+The original decoded string of the feed. 
+
 =head2 dom
 
-The following attributes are available after the feed has been parsed:
+The parsed feed as <Mojo::DOM> object.
 
 =head2  title
+
+Returns the feeds title.
 
 =head2  description 
 
@@ -123,7 +127,6 @@ Name of author field, or dc:creator or webMaster
 
 Time in epoch seconds (may be filled with pubDate, dc:date, created, issued, updated or modified)
 
-
 =head1 METHODS
 
 L<Mojo::Feed> inherits all methods from
@@ -132,62 +135,9 @@ L<Mojo::Base> and implements the following new ones.
 =head2 new
 
   my $feed = Mojo::Feed->new;
-  $feed->parse('atom.xml');
+  my $feed = Mojo::Feed->new( body => $string);
 
-  my $feed = Mojo::Feed->new('atom.xml');
-  my $feed = Mojo::Feed->new('http://example.com/atom.xml');
-  my $str = Mojo::File->new('atom.xml')->slurp;
-  my $feed = Mojo::Feed->new($str);
-  my $feed = Mojo::Feed->new(ua => Mojo::UserAgent->new);
-
-Construct a new L<Mojo::Feed> object. If passed a single argument, will call parse() with that argument. Multiple arguments will be used to initialize attributes, as in L<Mojo::Base>.
-
-=head2 discover
-
-  my @feeds;
-  Mojo::Feed->discover('search.cpan.org')
-            ->then(sub { @feeds = @_; })
-            ->wait();
-  for my $feed in (@feeds) {
-    print $feed . "\n";
-  }
-  # @feeds is a list of Mojo::URL objects
-
-A Mojo port of L<Feed::Find> by Benjamin Trott. This method implements feed auto-discovery for finding syndication feeds, given a URL.
-Returns a Mojo::Promise, which is fulfilled with a list of feeds (Mojo::URL objects)
-
-=head2 parse
-
-  # parse an RSS/Atom feed
-  my $url = Mojo::URL->new('http://rss.slashdot.org/Slashdot/slashdot');
-  my $feed = Mojo::Feed->new->parse($url);
-
-  # parse a file
-  $feed2 = Mojo::Feed->new->parse('/downloads/foo.rss');
-
-  # parse a string
-  my $str = Mojo::File->new('atom.xml')->slurp;
-  $feed3 = Mojo::Feed->new->parse($str);
-
-A minimalist liberal RSS/Atom parser, using Mojo::DOM queries.
-
-Dates are parsed using L<HTTP::Date>.
-
-C<parse()> will be called by C<new()> if it is passed a single argument
-
-
-=head2 parse_opml
-
-  my @subscriptions = Mojo::Feed->parse_opml( 'mysubs.opml' );
-  foreach my $sub (@subscriptions) {
-    say 'RSS URL is: ',     $sub->{xmlUrl};
-    say 'Website URL is: ', $sub->{htmlUrl};
-    say 'categories: ', join ',', @{$sub->{categories}};
-  }
-
-Parse an OPML subscriptions file and return the list of feeds as an array of hashrefs.
-
-Each hashref will contain an array ref in the key 'categories' listing the folders (parent nodes) in the OPML tree the subscription item appears in.
+Construct a new L<Mojo::Feed> object.
 
 =head1 CREDITS
 
@@ -196,8 +146,6 @@ Dotan Dimet
 Mario Domgoergen
 
 Some tests adapted from L<Feed::Find> and L<XML:Feed>, Feed auto-discovery adapted from L<Feed::Find>.
-
-
 
 =head1 LICENSE
 
