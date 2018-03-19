@@ -4,7 +4,7 @@ use Mojo::Base -base;
 use Mojo::UserAgent;
 use Mojo::Feed;
 use Mojo::File 'path';
-use Mojo::Util 'decode';
+use Mojo::Util 'decode', 'trim';
 use Carp qw(carp croak);
 use Scalar::Util qw(blessed);
 
@@ -62,11 +62,10 @@ sub discover {
   return $self->ua->get_p($url)
     ->catch(sub { my ($err) = shift; die "Connection Error: $err" })->then(sub {
     my ($tx) = @_;
-    my @feeds;
     if ($tx->success && $tx->res->code == 200) {
-      @feeds = $self->_find_feed_links($tx->req->url, $tx->res);
+      return $self->_find_feed_links($tx->req->url, $tx->res);
     }
-    return (@feeds);
+    return;
     });
 }
 
