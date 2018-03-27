@@ -42,18 +42,21 @@ my $file = File::Spec->catdir( $sample_dir, 'atom.xml' );
 $feed = Mojo::Feed::Reader->new->parse($file);
 isa_ok( $feed, 'Mojo::Feed' );
 is( $feed->title, 'First Weblog', 'title ok' );
+is ( $feed->source, $file , 'source ok' );
 
 # parse a string
 my $str = Mojo::File->new($file)->slurp;
 $feed = Mojo::Feed->new( body => $str);
 isa_ok( $feed, 'Mojo::Feed' );
 is( $feed->title, 'First Weblog', 'title ok' );
+ok ( !$feed->source,'source ok' );
 
 # parse a URL
 $feed =
   Mojo::Feed::Reader->new->ua( $t->app->ua )->parse( Mojo::URL->new("/atom.xml") );
 isa_ok( $feed, 'Mojo::Feed' );
 is( $feed->title, 'First Weblog', 'title ok' );
+is ( $feed->source->path, '/atom.xml' , 'source ok' );
 
 ## Callback and non-blocking no longer supported - how do we make a promise API?
 

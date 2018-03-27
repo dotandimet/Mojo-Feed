@@ -8,7 +8,7 @@ use Mojo::DOM;
 use HTTP::Date;
 
 has body => '';
-has source;
+has 'source';
 
 has dom => sub {
   my ($self) = @_;

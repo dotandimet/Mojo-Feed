@@ -32,7 +32,7 @@ sub parse {
       $body   = $source->slurp;
     }
     elsif ($xml =~ /^https?\:/ || (ref $xml && ref $xml eq 'Mojo::URL')) {
-      my $source = ((ref $xml) ? $xml->clone() : Mojo::URL->new($xml));
+      $source = ((ref $xml) ? $xml->clone() : Mojo::URL->new($xml));
       ($body, $charset) = $self->load($source);
     }
     else {
