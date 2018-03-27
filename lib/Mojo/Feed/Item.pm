@@ -10,6 +10,7 @@ has tags => sub {
 };
 
 has 'dom';
+has 'feed';
 
 has summary => sub { shift->description };
 
@@ -163,6 +164,10 @@ XML serialized text of the item's Mojo::DOM node. Note that this can be differen
 
 Optional - array ref of enclosures, each a hashref with the keys url, type and length.
 
+=head2  feed
+
+A reference to the feed this item belongs to. Note that this is a weak
+reference, so it maybe undefined, if the parent feed is no longer in scope.
 
 =head1 METHODS
 

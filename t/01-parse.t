@@ -99,6 +99,10 @@ for my $file ( sort keys %Feeds ) {
 
     # no id if no id in feed - just link
     ok( $entry->id );
+
+    is ( $entry->feed, $feed, 'reference for feed' );
+    undef $feed;
+    ok ( !$entry->feed, 'weak reference for feed');
 }
 
 $feed = $feedr->parse( File::Spec->catdir( $sample_dir, 'rss20.xml' ) )

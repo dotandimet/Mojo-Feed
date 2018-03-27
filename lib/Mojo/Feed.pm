@@ -6,6 +6,7 @@ our $VERSION = "0.01";
 use Mojo::Feed::Item;
 use Mojo::DOM;
 use HTTP::Date;
+use Scalar::Util 'weaken';
 
 has body => '';
 has 'source';
@@ -50,8 +51,10 @@ foreach my $k (keys %selector) {
 }
 
 has items => sub {
-  shift->dom->find('item, entry')
-    ->map(sub { Mojo::Feed::Item->new(dom => $_) });
+  my $self = shift;
+  $self->dom->find('item, entry')
+    ->map(sub { Mojo::Feed::Item->new(dom => $_, feed => $self) })
+    ->each(sub { weaken $_->{feed} });
 };
 
 1;
