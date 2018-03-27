@@ -62,7 +62,7 @@ __END__
 
 =encoding utf-8
 
-=for stopwords tagline pubDate dc:date
+=for stopwords tagline pubDate dc:date dc:creator webMaster
 
 =head1 NAME
 
@@ -93,7 +93,7 @@ L<Mojo::Feed> implements the following attributes.
 
 =head2 body
 
-The original decoded string of the feed. 
+The original decoded string of the feed.
 
 =head2 dom
 
@@ -122,11 +122,11 @@ L<Mojo::Collection> of L<Mojo::Feed::Item> objects representing feed news items
 
 =head2  subtitle
 
-Optional
+Optional feed description
 
 =head2  tagline
 
-Optional
+Optional feed description
 
 =head2  author
 
@@ -166,6 +166,8 @@ it under the same terms as Perl itself.
 =head1 AUTHOR
 
 Dotan Dimet E<lt>dotan@corky.netE<gt>
+
+Mario Domgoergen
 
 =cut
 

@@ -36,7 +36,7 @@ sub parse {
       ($body, $charset) = $self->load($source);
     }
     else {
-      ...;
+      die "unknown argument $xml";
     }
   }
   $charset ||= $self->charset;
