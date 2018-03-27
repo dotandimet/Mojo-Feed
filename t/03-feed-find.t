@@ -4,7 +4,7 @@ use Test::More;
 use Test::Mojo;
 use Mojo::URL;
 use FindBin;
-use Mojo::File;
+use Mojo::File qw(path);
 
 use Mojolicious::Lite;
 
@@ -12,20 +12,19 @@ use Mojo::Feed::Reader;
 
 get '/floo' => sub { shift->redirect_to('/link1.html'); };
 
-my $samples = File::Spec->catdir( $FindBin::Bin, 'samples' );
+my $samples = path( $FindBin::Bin, 'samples' );
 push @{ app->static->paths }, $samples;
 get '/olaf' => sub {
     shift->render(
         data =>
-          Mojo::File->new( File::Spec->catfile( $samples, 'atom.xml' ) )->slurp,
+           path( $samples, 'atom.xml' )->slurp,
         format => 'html'
     );
 };
 get '/monks' => sub {
     shift->render(
         data =>
-          Mojo::File->new( File::Spec->catfile( $samples, 'perlmonks.html' ) )
-          ->slurp,
+          path( $samples, 'perlmonks.html' )->slurp,
         format => 'htm'
     );
 };

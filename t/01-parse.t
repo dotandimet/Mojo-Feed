@@ -3,7 +3,7 @@ use Mojo::Base -strict;
 use Test::More;
 use Test::Mojo;
 use Mojo::URL;
-use Mojo::File;
+use Mojo::File qw(path);
 use HTTP::Date qw(time2isoz);
 
 use FindBin;
@@ -11,15 +11,13 @@ use Mojolicious::Lite;
 use Mojo::Feed;
 use Mojo::Feed::Reader;
 
-my $sample_dir = File::Spec->catdir( $FindBin::Bin, 'samples' );
+my $sample_dir = path( $FindBin::Bin, 'samples' );
 push @{ app->static->paths }, $sample_dir;
 my $t = Test::Mojo->new(app);
 
 get '/plasm' => sub {
     shift->render(
-        data => Mojo::File->new(
-            File::Spec->catfile( $sample_dir, 'plasmastrum.xml' )
-        )->slurp,
+        data   => path( $sample_dir, 'plasmastrum.xml' )->slurp,
         format => 'htm'
     );
 };
@@ -38,7 +36,7 @@ my %Feeds = (
 my $feed;
 
 # File:
-my $file = File::Spec->catdir( $sample_dir, 'atom.xml' );
+my $file = path( $sample_dir, 'atom.xml' );
 $feed = Mojo::Feed::Reader->new->parse($file);
 isa_ok( $feed, 'Mojo::Feed' );
 is( $feed->title, 'First Weblog', 'title ok' );
@@ -63,7 +61,7 @@ is ( $feed->source->path, '/atom.xml' , 'source ok' );
 my $feedr = Mojo::Feed::Reader->new;
 ## Then try calling all of the unified API methods.
 for my $file ( sort keys %Feeds ) {
-    my $path = File::Spec->catdir( $FindBin::Bin, 'samples', $file );
+    my $path = path( $FindBin::Bin, 'samples', $file );
     my $feed = $feedr->parse($path) or die "parse feed returned undef";
 
     #is($feed->format, $Feeds{$file});
@@ -105,7 +103,7 @@ for my $file ( sort keys %Feeds ) {
     ok ( !$entry->feed, 'weak reference for feed');
 }
 
-$feed = $feedr->parse( File::Spec->catdir( $sample_dir, 'rss20.xml' ) )
+$feed = $feedr->parse( path( $sample_dir, 'rss20.xml' ) )
   or die "parse fail";
 my $entry = $feed->items->[0];
 ok(
@@ -114,14 +112,14 @@ ok(
 );
 
 $feed =
-  $feedr->parse( File::Spec->catdir( $sample_dir, 'rss20-no-summary.xml' ) )
+  $feedr->parse( path( $sample_dir, 'rss20-no-summary.xml' ) )
   or die "parse fail";
 $entry = $feed->items->[0];
 ok( $entry->summary eq $entry->content, 'no summary use content/description' );
 like( $entry->content, qr/<p>This is a test.<\/p>/ );
 
 $feed =
-  $feedr->parse( File::Spec->catdir( $sample_dir, 'rss10-invalid-date.xml' ) )
+  $feedr->parse( path( $sample_dir, 'rss10-invalid-date.xml' ) )
   or die "parse fail";
 $entry = $feed->items->[0];
 ok( !$entry->{issued} );       ## Should return undef, but not die.
@@ -131,7 +129,7 @@ ok( !$entry->{published} );    ## Same.
 # summary vs. itunes:summary:
 
 $feed =
-  $feedr->parse( File::Spec->catdir( $sample_dir, 'itunes_summary.xml' ) )
+  $feedr->parse( path( $sample_dir, 'itunes_summary.xml' ) )
   or die "parse failed";
 $entry = $feed->items->[0];
 isnt( $entry->summary, 'This is for &8220;itunes sake&8221;.' );
@@ -152,7 +150,7 @@ is( $feed->html_url,           undef, 'no htmlUrl from html page' );
 # encoding issue when reading utf-8 text from file vs. from URL:
 
 my $feed_from_file =
-  $feedr->parse( File::Spec->catdir( $sample_dir, 'plasmastrum.xml' ) );
+  $feedr->parse( path( $sample_dir, 'plasmastrum.xml' ) );
 my $tx            = $t->get_ok('/plasmastrum.xml')->tx;
 my $feed_from_tx  = Mojo::Feed::Reader->new->ua( $t->app->ua )->parse( $tx->res->body );
 my $feed_from_url = Mojo::Feed::Reader->new->ua( $t->app->ua )

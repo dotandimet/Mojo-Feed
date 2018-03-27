@@ -3,21 +3,22 @@ use Mojo::Base -strict;
 use Test::More;
 use Test::Mojo;
 use Mojo::Util qw(dumper);
+use Mojo::File qw(path);
 
 use FindBin;
 use Mojolicious::Lite;
 
 use Mojo::Feed::Reader;
 
-my $sample_dir = File::Spec->catdir( $FindBin::Bin, 'samples' );
+my $sample_dir = path( $FindBin::Bin, 'samples' );
 push @{ app->static->paths }, $sample_dir;
 my $t = Test::Mojo->new(app);
 
 # test files:
 my %files = (
-    google_reader => File::Spec->catdir( $sample_dir, 'subscriptions.xml' ),
-    sputnik => File::Spec->catdir( $sample_dir, 'sputnik-feeds.opml.xml' ),
-    rssowl  => File::Spec->catdir( $sample_dir, 'rssowl.opml' )
+    google_reader => path( $sample_dir, 'subscriptions.xml' ),
+    sputnik => path( $sample_dir, 'sputnik-feeds.opml.xml' ),
+    rssowl  => path( $sample_dir, 'rssowl.opml' )
 );
 
 my $feedr = Mojo::Feed::Reader->new;
