@@ -139,6 +139,13 @@ is(
 '
 );
 
+# author vs itunes:author:
+# does the order of the tags change which one we pick?
+$feed = $feedr->parse( path($sample_dir, 'itunes_author_order.xml') )
+        or die "parse failed";
+is($feed->items->[0]->author, 'webmaster@kcrw.org (KCRW, Elvis Mitchell)', 'author not itunes:author');
+is($feed->items->[1]->author, 'webmaster@kcrw.org (KCRW, Elvis Mitchell)', 'author not itunes:author, despite order');
+
 # Let's do some errors - trying to parse html responses, basically
 $feed = Mojo::Feed->new( body => $t->app->ua->get('/link1.html')->res->body );
 
