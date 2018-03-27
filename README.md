@@ -28,11 +28,16 @@ Date parsing used [HTTP::Date](https://metacpan.org/pod/HTTP::Date).
 
 ## body
 
-The original decoded string of the feed. 
+The original decoded string of the feed.
 
 ## dom
 
 The parsed feed as <Mojo::DOM> object.
+
+## source
+
+The source of the feed; either a [Mojo::Path](https://metacpan.org/pod/Mojo::Path) or [Mojo::URL](https://metacpan.org/pod/Mojo::URL) object, or
+undef if the feed source was a string scalar.
 
 ## title
 
@@ -52,11 +57,11 @@ web page URL associated with the feed
 
 ## subtitle
 
-Optional
+Optional feed description
 
 ## tagline
 
-Optional
+Optional feed description
 
 ## author
 
@@ -96,3 +101,5 @@ it under the same terms as Perl itself.
 # AUTHOR
 
 Dotan Dimet <dotan@corky.net>
+
+Mario Domgoergen
