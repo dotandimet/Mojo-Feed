@@ -8,6 +8,7 @@ use Mojo::DOM;
 use HTTP::Date;
 
 has body => '';
+has source;
 
 has dom => sub {
   my ($self) = @_;
@@ -94,6 +95,11 @@ The original decoded string of the feed.
 =head2 dom
 
 The parsed feed as <Mojo::DOM> object.
+
+=head2 source
+
+The source of the feed; either a L<Mojo::Path> or L<Mojo::URL> object, or
+undef if the feed source was a string scalar.
 
 =head2  title
 

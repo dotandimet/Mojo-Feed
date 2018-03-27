@@ -22,16 +22,18 @@ has charset => 'UTF-8';
 sub parse {
   my ($self, $xml, $charset) = @_;
   my $body;
+  my $source;
   if ($xml) {
     if ($xml =~ /^\</) {
       $body = $xml;
     }
     elsif (-r $xml) {
-      $body = path($xml)->slurp;
+      $source = path($xml);
+      $body   = $source->slurp;
     }
     elsif ($xml =~ /^https?\:/ || (ref $xml && ref $xml eq 'Mojo::URL')) {
-      my $url = ((ref $xml) ? $xml->clone() : Mojo::URL->new($xml));
-      ($body, $charset) = $self->load($url);
+      my $source = ((ref $xml) ? $xml->clone() : Mojo::URL->new($xml));
+      ($body, $charset) = $self->load($source);
     }
     else {
       ...;
@@ -39,7 +41,7 @@ sub parse {
   }
   $charset ||= $self->charset;
   $body = $charset ? decode($charset, $body) // $body : $body;
-  return Mojo::Feed->new(body => $body);
+  return Mojo::Feed->new(body => $body, source => $source);
 }
 
 sub load {
