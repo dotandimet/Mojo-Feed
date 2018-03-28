@@ -62,6 +62,7 @@ sub to_hash {
     my $hash = { map { $_ => '' . ($self->$_ || '') } (keys %selector) };
     $hash->{items} = $self->items->map('to_hash');
     return $hash;
+}
 
 sub to_string {
   shift->dom->to_string;
