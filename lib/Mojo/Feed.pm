@@ -62,6 +62,9 @@ sub to_hash {
     my $hash = { map { $_ => '' . ($self->$_ || '') } (keys %selector) };
     $hash->{items} = $self->items->map('to_hash');
     return $hash;
+
+sub to_string {
+  shift->dom->to_string;
 }
 
 1;
@@ -161,6 +164,10 @@ Construct a new L<Mojo::Feed> object.
   print $hash->{title};
 
 Return a hash reference representing the feed.
+
+=head2 to_string
+
+Return a XML serialized text of the feeds's Mojo::DOM node. Note that this can be different from the original XML text in the feed.
 
 =head1 CREDITS
 

@@ -94,7 +94,9 @@ has link => sub {
   return $link;
 };
 
-has _raw => sub { shift->dom->to_string };
+sub to_string {
+  shift->dom->to_string;
+}
 
 sub to_hash {
     my $self = shift;
@@ -165,10 +167,6 @@ May be filled from C<author> or C<dc:creator>
 
 Optional - array ref of C<tags>, C<categories> or C<dc:subjects>.
 
-=head2  _raw
-
-XML serialized text of the item's Mojo::DOM node. Note that this can be different from the original XML text in the feed.
-
 =head2  enclosures
 
 Optional - array ref of enclosures, each a hashref with the keys url, type and length.
@@ -188,6 +186,10 @@ L<Mojo::Feed::Item> inherits all methods from L<Mojo::Base> and adds the followi
   print $hash->{title};
 
 Return a hash reference representing the item.
+
+=head2 to_string
+
+Return a XML serialized text of the item's Mojo::DOM node. Note that this can be different from the original XML text in the feed.
 
 =head1 CREDITS
 
