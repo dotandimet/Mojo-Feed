@@ -1,14 +1,14 @@
 package Mojolicious::Plugin::FeedReader;
 use Mojo::Base 'Mojolicious::Plugin';
 
-our $VERSION = '0.11';
+our $VERSION = '0.13';
 use Mojo::Feed::Reader;
 
 has feed_reader => sub { Mojo::Feed::Reader->new };
 sub register {
   my ($self, $app) = @_;
   $self->feed_reader->ua($app->ua);
-  $app->helper(parse_feed => sub { shift; $self->feed_reader->parse(@_)->root });
+  $app->helper(parse_feed => sub { shift; $self->feed_reader->parse(@_)->to_hash });
   $app->helper(find_feeds => sub { shift; my @res; $self->feed_reader->discover(@_)->then(sub { @res = @_; })->wait; return @res; });
   $app->helper(parse_opml => sub { shift; $self->feed_reader->parse_opml(@_) });
 }
