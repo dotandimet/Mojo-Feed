@@ -34,7 +34,7 @@ my %selector = (
 foreach my $k (keys %selector) {
   has $k => sub {
     my $self = shift;
-    for my $selector (@{$selector{$k} || [$k]}) {
+    for my $selector (@{$selector{$k}}) {
       if (my $p = $self->dom->at("channel > $selector, feed > $selector")) {
         if ($k eq 'author' && $p->at('name')) {
           return $p->at('name')->text;
@@ -58,10 +58,10 @@ has items => sub {
 };
 
 sub to_hash {
-    my $self = shift;
-    my $hash = { map { $_ => '' . ($self->$_ || '') } (keys %selector) };
-    $hash->{items} = $self->items->map('to_hash');
-    return $hash;
+  my $self = shift;
+  my $hash = {map { $_ => '' . ($self->$_ || '') } (keys %selector)};
+  $hash->{items} = $self->items->map('to_hash');
+  return $hash;
 }
 
 1;
