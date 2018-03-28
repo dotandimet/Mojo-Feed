@@ -96,6 +96,15 @@ has link => sub {
 
 has _raw => sub { shift->dom->to_string };
 
+sub to_hash {
+    my $self = shift;
+    my $hash = { map { $_ => '' . ($self->$_ || '') } (qw(title link content id description guid published author)) };
+    if ($self->enclosures->size) {
+        $hash->{enclosures} = $self->enclosures->map('to_hash');
+    }
+    return $hash;
+}
+
 1;
 
 __END__
@@ -171,7 +180,14 @@ reference, so it maybe undefined, if the parent feed is no longer in scope.
 
 =head1 METHODS
 
-L<Mojo::Feed::Item> inherits all methods from L<Mojo::Base>.
+L<Mojo::Feed::Item> inherits all methods from L<Mojo::Base> and adds the following ones:
+
+=head2 to_hash
+
+  my $hash = $item->to_hash;
+  print $hash->{title};
+
+Return a hash reference representing the item.
 
 =head1 CREDITS
 

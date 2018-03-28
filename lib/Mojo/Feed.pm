@@ -57,6 +57,13 @@ has items => sub {
     ->each(sub { weaken $_->{feed} });
 };
 
+sub to_hash {
+    my $self = shift;
+    my $hash = { map { $_ => '' . ($self->$_ || '') } (keys %selector) };
+    $hash->{items} = $self->items->map('to_hash');
+    return $hash;
+}
+
 1;
 __END__
 
@@ -147,6 +154,13 @@ L<Mojo::Base> and implements the following new ones.
   my $feed = Mojo::Feed->new( body => $string);
 
 Construct a new L<Mojo::Feed> object.
+
+=head2 to_hash
+
+  my $hash = $feed->to_hash;
+  print $hash->{title};
+
+Return a hash reference representing the feed.
 
 =head1 CREDITS
 
