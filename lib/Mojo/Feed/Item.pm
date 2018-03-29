@@ -23,6 +23,9 @@ my %selector = (
   ],
   author => ['author', 'dc\:creator'],
   id     => ['id',     'guid', 'link'],
+  title => ['title'],
+  link  => ['link'],
+  guid  => ['guid'],
 );
 
 sub _at {
@@ -34,11 +37,11 @@ sub _at {
   });
 }
 
-foreach my $k (qw(title link content id description guid published author)) {
+foreach my $k (keys %selector) {
   has $k => sub {
     my $self = shift;
-    for my $selector (@{$selector{$k} || [$k]}) {
-      if ( my $p = $self->_at($selector) ) {
+    for my $selector (@{$selector{$k}}) {
+      if (my $p = $self->_at($selector)) {
         if ($k eq 'author' && $p->at('name')) {
           return $p->at('name')->text;
         }
@@ -97,12 +100,12 @@ has link => sub {
 has _raw => sub { shift->dom->to_string };
 
 sub to_hash {
-    my $self = shift;
-    my $hash = { map { $_ => '' . ($self->$_ || '') } (qw(title link content id description guid published author)) };
-    if ($self->enclosures->size) {
-        $hash->{enclosures} = $self->enclosures->map('to_hash');
-    }
-    return $hash;
+  my $self = shift;
+  my $hash = {map { $_ => '' . ($self->$_ || '') } keys %selector};
+  if ($self->enclosures->size) {
+    $hash->{enclosures} = $self->enclosures->map('to_hash');
+  }
+  return $hash;
 }
 
 1;
