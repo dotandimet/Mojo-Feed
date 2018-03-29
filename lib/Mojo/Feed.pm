@@ -1,6 +1,11 @@
 package Mojo::Feed;
 use Mojo::Base '-base';
 
+use overload
+  bool     => sub {1},
+  '""'     => sub { shift->to_string },
+  fallback => 1;
+
 our $VERSION = "0.01";
 
 use Mojo::Feed::Item;

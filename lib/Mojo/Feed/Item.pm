@@ -1,7 +1,14 @@
 package Mojo::Feed::Item;
 use Mojo::Base '-base';
+
+use overload
+  bool     => sub {1},
+  '""'     => sub { shift->to_string },
+  fallback => 1;
+
 use Mojo::Feed::Item::Enclosure;
 use HTTP::Date 'str2time';
+
 has [qw(title link content id description guid published author)];
 
 has tags => sub {
