@@ -49,7 +49,7 @@ my $feedr = Mojo::Feed::Reader->new;
 
 while (my ($file, $result) = each %test_results) {
   my $feed = $feedr->parse($samples->child($file));
-  is_deeply($feed->items->[0]->enclosures, $result);
+  is_deeply($feed->items->[0]->enclosures->map('to_hash'), $result);
 }
 
 done_testing();

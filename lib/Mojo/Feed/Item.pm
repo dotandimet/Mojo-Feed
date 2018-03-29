@@ -60,21 +60,16 @@ has enclosures => sub {
   my $self = shift;
   my @enclosures;
   $self->dom->find('enclosure')->each(sub {
-    push @enclosures, shift->attr;
+    push @enclosures, $_;
   });
   $self->dom->find('link')->each(sub {
     my $l = shift;
     if ($l->attr('href') && $l->attr('rel') && $l->attr('rel') eq 'enclosure') {
-      push @enclosures,
-        {
-        url    => $l->attr('href'),
-        type   => $l->attr('type'),
-        length => $l->attr('length')
-        };
+      push @enclosures, $l;
     }
   });
-  return Mojo::Collection->new(map { Mojo::Feed::Item::Enclosure->new($_) }
-      @enclosures);
+  return Mojo::Collection->new(
+    map { Mojo::Feed::Item::Enclosure->new(dom => $_) } @enclosures);
 };
 
 has link => sub {
