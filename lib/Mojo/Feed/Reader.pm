@@ -21,26 +21,48 @@ has charset => 'UTF-8';
 
 sub parse {
   my ($self, $xml, $charset) = @_;
-  my $body;
-  my $source;
-  if ($xml) {
-    if ($xml =~ /^\</) {
+  my ($body, $source, $url, $file);
+  return unless ($xml);
+  if (!ref $xml) {
+    if ($xml =~ /^\</) { # looks like XML string...
       $body = $xml;
     }
-    elsif (-r $xml) {
-      $source = path($xml);
-      $body   = $source->slurp;
+    elsif ($xml =~ /^https?\:/) {
+      $url = Mojo::URL->new($xml);
     }
-    elsif ($xml =~ /^https?\:/ || (ref $xml && ref $xml eq 'Mojo::URL')) {
-      $source = ((ref $xml) ? $xml->clone() : Mojo::URL->new($xml));
-      ($body, $charset) = $self->load($source);
+    elsif (-r $xml) { # a readable file path
+      $file = path($xml);
     }
     else {
       die "unknown argument $xml";
     }
   }
+  else {  # $xml is a reference
+   if (blessed $xml && $xml->can('slurp')) {
+      $file = $xml;
+   }
+   elsif (blessed $xml && $xml->isa('Mojo::URL')) {
+      $url = $xml->clone();
+   }
+   elsif (blessed $xml && $xml->isa('Mojo::DOM')) {
+      $body = $xml->to_string;  # we don't need your dom, we make our own
+   }
+   elsif (ref $xml eq 'SCALAR') {
+        $body = $$xml;
+   }
+   else {
+      die "unknown argument $xml";
+    }
+  }
+  if ($url) {
+    ($body, $charset) = $self->load($url);
+  }
+  if ($file) {
+    $body = $file->slurp;
+  }
   $charset ||= $self->charset;
   $body = $charset ? decode($charset, $body) // $body : $body;
+  $source = $url || $file;
   return Mojo::Feed->new(body => $body, source => $source);
 }
 
