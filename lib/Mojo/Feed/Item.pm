@@ -107,7 +107,10 @@ sub to_hash {
   my $self = shift;
   my $hash = {map { $_ => '' . ($self->$_ || '') } keys %selector};
   if ($self->enclosures->size) {
-    $hash->{enclosures} = $self->enclosures->map('to_hash');
+    $hash->{'enclosures'} = $self->enclosures->map('to_hash')->to_array;
+  }
+  if ($self->tags->size) {
+    $hash->{'tags'} = $self->tags->to_array;
   }
   return $hash;
 }

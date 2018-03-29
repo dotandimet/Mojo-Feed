@@ -65,7 +65,7 @@ has items => sub {
 sub to_hash {
   my $self = shift;
   my $hash = {map { $_ => '' . ($self->$_ || '') } (keys %selector)};
-  $hash->{items} = $self->items->map('to_hash');
+  $hash->{items} = $self->items->map('to_hash')->to_array;
   return $hash;
 }
 
