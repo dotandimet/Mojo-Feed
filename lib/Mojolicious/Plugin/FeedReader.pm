@@ -11,63 +11,64 @@ has feed_reader => sub { Mojo::Feed::Reader->new };
 sub register {
   my ($self, $app) = @_;
   $self->feed_reader->ua($app->ua);
-  $app->helper(
-    parse_feed => sub {
-      shift;
-      my @args = @_;
-
-      # handle deprecated case of using Mojo::DOM as input
-      if (ref $args[0] && blessed $args[0] && $args[0]->isa('Mojo::DOM')) {
-        $args[0] = $args[0]->to_string();
-      }
-      # handle special case of being passed a callback - make non-blocking call
-      if ( ref $args[0]
-        && blessed $args[0]
-        && $args[0]->isa('Mojo::URL')
-        && ref $args[1]
-        && ref $args[1] eq 'CODE')
-      {
-        $self->feed_reader->ua->get(
-          $args[0],
-          sub {
-            my $tx = pop;
-            my $feed;
-            if ($tx->success) {
-              $feed = $self->feed_reader->parse($tx->res->body,
-                $tx->res->content->charset)->to_hash;
-              $feed->{'htmlUrl'} = delete $feed->{'html_url'};
-            }
-            $args[1]->($feed);
-          }
-        );
-      }
-      else {
-        my $feed = $self->feed_reader->parse(@args)->to_hash;
-        $feed->{'htmlUrl'} = delete $feed->{'html_url'};
-        return $feed;
-      }
-    }
-  );
-  $app->helper(
-    find_feeds => sub {
-      shift;
-      my $cb;
-      if (ref $_[-1] && ref $_[-1] eq 'CODE') {
-        $cb = pop @_;
-      }
-      my $promise = $self->feed_reader->discover(@_);
-      if ($cb) {
-        $promise->then($cb);
-      }
-      else {
-      my @res;
-      $promise->then(sub { @res = @_; })->wait;
-      return @res;
-      }
-    }
-  );
+  $app->helper(parse_feed => sub { shift; $self->parse_rss(@_); });
+  $app->helper(parse_rss  => sub { shift; $self->parse_rss(@_); });
+  $app->helper(find_feeds => sub { shift; $self->find_feeds(@_); });
   $app->helper(parse_opml => sub { shift; $self->feed_reader->parse_opml(@_) });
-  $app->helper(parse_rss => sub { shift->parse_feed(@_) });
+}
+
+sub parse_rss {
+  my $self = shift;
+  my @args = @_;
+
+  # handle deprecated case of using Mojo::DOM as input
+  if (ref $args[0] && blessed $args[0] && $args[0]->isa('Mojo::DOM')) {
+    $args[0] = $args[0]->to_string();
+  }
+
+  # handle special case of being passed a callback - make non-blocking call
+  if ( ref $args[0]
+    && blessed $args[0]
+    && $args[0]->isa('Mojo::URL')
+    && ref $args[1]
+    && ref $args[1] eq 'CODE')
+  {
+    $self->feed_reader->ua->get(
+      $args[0],
+      sub {
+        my $tx = pop;
+        my $feed;
+        if ($tx->success) {
+          $feed = $self->feed_reader->parse($tx->res->body,
+            $tx->res->content->charset)->to_hash;
+          $feed->{'htmlUrl'} = delete $feed->{'html_url'};
+        }
+        $args[1]->($feed);
+      }
+    );
+  }
+  else {
+    my $feed = $self->feed_reader->parse(@args)->to_hash;
+    $feed->{'htmlUrl'} = delete $feed->{'html_url'};
+    return $feed;
+  }
+}
+
+sub find_feeds {
+  my $self = shift;
+  my $cb;
+  if (ref $_[-1] && ref $_[-1] eq 'CODE') {
+    $cb = pop @_;
+  }
+  my $promise = $self->feed_reader->discover(@_);
+  if ($cb) {
+    $promise->then($cb);
+  }
+  else {
+    my @res;
+    $promise->then(sub { @res = @_; })->wait;
+    return @res;
+  }
 }
 
 1;
