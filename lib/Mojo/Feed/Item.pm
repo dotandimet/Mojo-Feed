@@ -216,4 +216,6 @@ it under the same terms as Perl itself.
 
 Dotan Dimet E<lt>dotan@corky.netE<gt>
 
+Mario Domgoergen
+
 =cut

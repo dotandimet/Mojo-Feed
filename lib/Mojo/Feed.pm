@@ -93,15 +93,16 @@ Mojo::Feed - Mojo::DOM-based parsing of RSS & Atom feeds
     print $feed->title, "\n",
       $feed->items->map('title')->join("\n");
 
-    $feed = Mojo::Feed->new( dom => $dom );
+    $feed = Mojo::Feed->new( body => $string );
 
 =head1 DESCRIPTION
 
 L<Mojo::Feed> is an Object Oriented module for identifying,
 fetching and parsing RSS and Atom Feeds.  It relies on
-L<Mojo::DOM> for XML/HTML parsing.
+L<Mojo::DOM> for XML/HTML parsing. Date parsing is done with L<HTTP::Date>.
 
-Date parsing used L<HTTP::Date>.
+L<Mojo::Feed> represents the parsed RSS/Atom feed; you can construct it
+by setting an XML string as the C<body>, or by using a L<Mojo::Feed::Reader> object.
 
 =head1 ATTRIBUTES
 
@@ -146,7 +147,7 @@ Optional feed description
 
 =head2  author
 
-Name of author field, or dc:creator or webMaster
+Name from C<author>, C<dc:creator> or C<webMaster> field
 
 =head2  published
 
