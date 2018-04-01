@@ -8,6 +8,11 @@ use Scalar::Util qw(blessed);
 
 has feed_reader => sub { Mojo::Feed::Reader->new };
 
+sub new {
+  my $self = shift;
+  return $self->SUPER::new(feed_reader => Mojo::Feed::Reader->new(@_));
+}
+
 sub register {
   my ($self, $app) = @_;
   $self->feed_reader->ua($app->ua);
