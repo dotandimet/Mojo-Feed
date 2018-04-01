@@ -66,7 +66,7 @@
          "web" : "https://github.com/dotandimet/Mojo-Feed"
       }
    },
-   "version" : "0.01",
+   "version" : "0.13",
    "x_authority" : "cpan:DOTAN",
    "x_contributors" : [
       "Dotan Dimet <dotan@corky.net>",

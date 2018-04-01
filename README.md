@@ -12,15 +12,16 @@ Mojo::Feed - Mojo::DOM-based parsing of RSS & Atom feeds
     print $feed->title, "\n",
       $feed->items->map('title')->join("\n");
 
-    $feed = Mojo::Feed->new( dom => $dom );
+    $feed = Mojo::Feed->new( body => $string );
 
 # DESCRIPTION
 
 [Mojo::Feed](https://metacpan.org/pod/Mojo::Feed) is an Object Oriented module for identifying,
 fetching and parsing RSS and Atom Feeds.  It relies on
-[Mojo::DOM](https://metacpan.org/pod/Mojo::DOM) for XML/HTML parsing.
+[Mojo::DOM](https://metacpan.org/pod/Mojo::DOM) for XML/HTML parsing. Date parsing is done with [HTTP::Date](https://metacpan.org/pod/HTTP::Date).
 
-Date parsing used [HTTP::Date](https://metacpan.org/pod/HTTP::Date).
+[Mojo::Feed](https://metacpan.org/pod/Mojo::Feed) represents the parsed RSS/Atom feed; you can construct it
+by setting an XML string as the `body`, or by using a [Mojo::Feed::Reader](https://metacpan.org/pod/Mojo::Feed::Reader) object.
 
 # ATTRIBUTES
 
@@ -65,7 +66,7 @@ Optional feed description
 
 ## author
 
-Name of author field, or dc:creator or webMaster
+Name from `author`, `dc:creator` or `webMaster` field
 
 ## published
 
@@ -82,6 +83,17 @@ Time in epoch seconds (may be filled with pubDate, dc:date, created, issued, upd
     my $feed = Mojo::Feed->new( body => $string);
 
 Construct a new [Mojo::Feed](https://metacpan.org/pod/Mojo::Feed) object.
+
+## to\_hash
+
+    my $hash = $feed->to_hash;
+    print $hash->{title};
+
+Return a hash reference representing the feed.
+
+## to\_string
+
+Return a XML serialized text of the feeds's Mojo::DOM node. Note that this can be different from the original XML text in the feed.
 
 # CREDITS
 
