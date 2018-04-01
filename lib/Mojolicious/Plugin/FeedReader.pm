@@ -42,6 +42,8 @@ sub parse_rss {
           $feed = $self->feed_reader->parse($tx->res->body,
             $tx->res->content->charset)->to_hash;
           $feed->{'htmlUrl'} = delete $feed->{'html_url'};
+          for (keys %$feed) { delete $feed->{$_} if ($feed->{$_} eq '') };
+          delete $feed->{'items'} if (scalar @{$feed->{'items'}} == 0);
         }
         $args[1]->($feed);
       }
@@ -50,6 +52,8 @@ sub parse_rss {
   else {
     my $feed = $self->feed_reader->parse(@args)->to_hash;
     $feed->{'htmlUrl'} = delete $feed->{'html_url'};
+    for (keys %$feed) { delete $feed->{$_} if ($feed->{$_} eq '') };
+    delete $feed->{'items'} if (scalar @{$feed->{'items'}} == 0);
     return $feed;
   }
 }
@@ -73,8 +77,11 @@ sub find_feeds {
 
 1;
 
+__END__
+
 =encoding utf-8
 
+=for stopwords htmlUrl xhtml:body dc:subjects autodiscovery
 =head1 NAME
 
 Mojolicious::Plugin::FeedReader - Mojolicious plugin to find and parse RSS & Atom feeds
