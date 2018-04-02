@@ -1,24 +1,22 @@
 use Mojo::Base -strict;
-
 use Test::More;
 use Test::Mojo;
 use Mojo::URL;
-use Mojo::File qw(path);
+use Mojo::File;
 use HTTP::Date qw(time2isoz);
 
 use FindBin;
 use Mojolicious::Lite;
+
+subtest "parse" => sub {
+
 plugin 'FeedReader';
 
-my $samples = path($FindBin::Bin)->child('samples');
-push @{app->static->paths}, $samples;
+my $sample_dir = File::Spec->catdir($FindBin::Bin, 'samples');
+push @{app->static->paths}, $sample_dir;
 my $t = Test::Mojo->new(app);
 
-get '/plasm' => sub { shift->render(data => $samples->child('plasmastrum.xml')->slurp, format => 'htm'); };
-get '/floo' => sub { shift->redirect_to('/link1.html'); };
-get '/olaf' =>sub { shift->render(data => $samples->child('atom.xml')->slurp, format => 'html'); };
-get '/monks' =>sub { shift->render(data => $samples->child('perlmonks.html')->slurp, format => 'htm'); };
-
+get '/plasm' => sub { shift->render(data => Mojo::File->new(File::Spec->catfile($sample_dir, 'plasmastrum.xml'))->slurp, format => 'htm'); };
 
 # test the parse_feed helper.
 
@@ -33,7 +31,7 @@ my %Feeds = (
 ## First, test all of the various ways of calling parse.
 my $feed;
 # File:
-my $file = $samples->child('atom.xml');
+my $file = File::Spec->catdir($sample_dir, 'atom.xml');
 $feed = $t->app->parse_feed($file);
 isa_ok($feed, 'HASH');
 is($feed->{title}, 'First Weblog');
@@ -121,13 +119,13 @@ for my $file (sort keys %Feeds) {
     ok($entry->{id});
 }
 
-$feed = $t->app->parse_feed($samples->child('rss20-no-summary.xml'))
+$feed = $t->app->parse_feed(File::Spec->catdir($sample_dir, 'rss20-no-summary.xml'))
     or die "parse fail";
 my $entry = $feed->{items}[0];
 ok(!$entry->{summary});
 like($entry->{content}, qr/<p>This is a test.<\/p>/);
 
-$feed = $t->app->parse_feed($samples->child('rss10-invalid-date.xml'))
+$feed = $t->app->parse_feed(File::Spec->catdir($sample_dir, 'rss10-invalid-date.xml'))
     or die "parse fail";
 $entry = $feed->{items}[0];
 ok(!$entry->{issued});   ## Should return undef, but not die.
@@ -136,7 +134,7 @@ ok(!$entry->{published}); ## Same.
 
 # summary vs. itunes:summary:
 
-$feed = $t->app->parse_feed($samples->child('itunes_summary.xml'))
+$feed = $t->app->parse_feed(File::Spec->catdir($sample_dir, 'itunes_summary.xml'))
   or die "parse failed";
 $entry = $feed->{items}[0];
 isnt($entry->{summary}, 'This is for &8220;itunes sake&8221;.');
@@ -154,7 +152,7 @@ ok(! exists $feed->{htmlUrl}, 'no htmlUrl from html page');
 
 # encoding issue when reading utf-8 text from file vs. from URL:
 
-my $feed_from_file = $t->app->parse_feed($samples->child('plasmastrum.xml'));
+my $feed_from_file = $t->app->parse_feed(File::Spec->catdir($sample_dir, 'plasmastrum.xml'));
 $tx = $t->get_ok('/plasmastrum.xml')->tx;
 my $feed_from_tx = $t->app->parse_feed( $tx->res->content->asset );
 my $feed_from_url = $t->app->parse_feed( Mojo::URL->new('/plasmastrum.xml') );
@@ -168,11 +166,68 @@ for my $i (5,7,24) {
 
 
 
+done_testing();
+
+};
+
+subtest "atom10" => sub {
+
+use strict;
+use Mojo::Base -strict;
+
+use Test::Mojo;
+use Mojo::URL;
+
+use Mojolicious::Lite;
+plugin 'FeedReader';
+
+use HTTP::Date qw(time2isoz);
+use Test::More;
+
+my $t = Test::Mojo->new(app);
+my $feed = $t->app->parse_rss("t/samples/atom-full.xml");
+is $feed->{title}, 'Content Considered Harmful Atom Feed';
+is $feed->{htmlUrl}, 'http://blog.jrock.us/', "link without rel";
+
+my $e = $feed->{items}[0];
+ok $e->{link}, 'entry link without rel';
+is join("", @{$e->{tags}}), "Catalyst", "atom:category support";
+is time2isoz($e->{published}), "2006-08-09 19:07:58Z", "atom:updated";
+# this test fails, but I'm OK with that:
+# like $e->{content}, qr/^<div class="pod">/, "xhtml content";
+done_testing();
+
+
+
+};
+
+subtest "feed-find" => sub {
+
+use Mojo::Base -strict;
+
+use Test::More;
+use Test::Mojo;
+use Mojo::URL;
+use FindBin;
+use Mojo::File;
+
+use Mojolicious::Lite;
+plugin 'FeedReader';
+
+get '/floo' => sub { shift->redirect_to('/link1.html'); };
+
+my $samples = File::Spec->catdir($FindBin::Bin, 'samples');
+push @{app->static->paths}, $samples;
+get '/olaf' =>sub { shift->render(data => Mojo::File->new(File::Spec->catfile($samples, 'atom.xml'))->slurp, format => 'html'); };
+get '/monks' =>sub { shift->render(data => Mojo::File->new(File::Spec->catfile($samples, 'perlmonks.html'))->slurp, format => 'htm'); };
+
+my $t = Test::Mojo->new(app);
+
+my $abs_feed_url = $t->app->ua->server->nb_url->clone->path('atom.xml')->to_abs;
 
 # feed
 $t->get_ok('/atom.xml')->status_is(200);
-my $abs_feed_url = $t->tx->req->url->to_abs;
-my @feeds = $t->app->find_feeds($abs_feed_url);
+my @feeds = $t->app->find_feeds('/atom.xml');
 is( $feeds[0],  $abs_feed_url ); # abs url!
 
 # can we consume a Mojo::URL ?
@@ -181,13 +236,12 @@ is_deeply($feeds_a[0], $feeds[0], 'argument is a Mojo::URL');
 
 # link
 $t->get_ok('/link1.html')->status_is(200);
-$abs_feed_url = $t->tx->req->url->clone->path('/atom.xml')->to_abs;
-(@feeds) = $t->app->find_feeds($t->tx->req->url->to_abs);
+(@feeds) = $t->app->find_feeds('/link1.html');
 is( $feeds[0],  $abs_feed_url ); # abs url!
 
 # html page with multiple feed links
 $t->get_ok('/link2_multi.html')->status_is(200);
-(@feeds) = $t->app->find_feeds($t->tx->req->url->to_abs);
+(@feeds) = $t->app->find_feeds('/link2_multi.html');
 is ( scalar @feeds, 3, 'got 3 possible feed links');
 is( $feeds[0],  'http://www.example.com/?feed=rss2' ); # abs url!
 is( $feeds[1],  'http://www.example.com/?feed=rss' ); # abs url!
@@ -196,13 +250,13 @@ is( $feeds[2],  'http://www.example.com/?feed=atom' ); # abs url!
 # feed is in link:
 # also, use base tag in head - for pretty url
 $t->get_ok('/link3_anchor.html')->status_is(200);
-(@feeds) = $t->app->find_feeds($t->tx->req->url->to_abs);
+(@feeds) = $t->app->find_feeds('/link3_anchor.html');
 is( $feeds[0],  'http://example.com/foo.rss' );
 is( $feeds[1],  'http://example.com/foo.xml' );
 
 # Does it work the same non-blocking?
 @feeds = ();
-$delay = Mojo::IOLoop->delay( sub {
+my $delay = Mojo::IOLoop->delay( sub {
   shift;
   (@feeds) = @_;
 } );
@@ -215,11 +269,10 @@ is( $feeds[2],  'http://www.example.com/?feed=atom' ); # abs url!
 
 # Let's try something with redirects:
 $t->get_ok('/floo')->status_is(302);
-my $floo = $t->tx->req->url->to_abs;
-(@feeds) = $t->app->find_feeds($floo);
+(@feeds) = $t->app->find_feeds('/floo');
 is( $feeds[0],  undef, 'default UA does not follow redirects'); # default UA doesn't follow redirects!
 $t->app->ua->max_redirects(3);
-(@feeds) = $t->app->find_feeds($floo);
+(@feeds) = $t->app->find_feeds('/floo');
 is( $feeds[0],  $abs_feed_url, 'found with redirect' ); # abs url!
 
 # what do we do on a page with no feeds?
@@ -261,14 +314,32 @@ is(scalar @feeds, 0, 'no feeds for perlmonks (nb)');
 # is(scalar @feeds, 1, 'feed for slashdot');
 
 
+done_testing();
+
+};
+
+subtest "opml" => sub {
+
+use Mojo::Base -strict;
+
+use Test::More;
+use Test::Mojo;
 use Mojo::Util qw(dumper);
 
+use FindBin;
+use Mojolicious::Lite;
+
+plugin 'FeedReader';
+
+my $sample_dir = File::Spec->catdir($FindBin::Bin, 'samples');
+push @{app->static->paths}, $sample_dir;
+my $t = Test::Mojo->new(app);
 
 # test files:
 my %files = (
-  google_reader => $samples->child('subscriptions.xml'),
-  sputnik       => $samples->child('sputnik-feeds.opml.xml'),
-  rssowl        => $samples->child('rssowl.opml')
+  google_reader => File::Spec->catdir($sample_dir, 'subscriptions.xml'),
+  sputnik       => File::Spec->catdir($sample_dir, 'sputnik-feeds.opml.xml'),
+  rssowl        => File::Spec->catdir($sample_dir, 'rssowl.opml')
 );
 
 for my $type (qw(google_reader sputnik rssowl)) {
@@ -304,56 +375,63 @@ for my $type (qw(google_reader sputnik rssowl)) {
   }
 }
 
-use strict;
+done_testing();
+
+};
+
+subtest "" => sub {
+
 use Mojo::Base -strict;
 
+use Test::More;
 use Test::Mojo;
 use Mojo::URL;
-
+use Mojo::File 'path';
+use Mojolicious::Plugin::FeedReader;
 use Mojolicious::Lite;
-plugin 'FeedReader';
 
-use HTTP::Date qw(time2isoz);
-use Test::More;
+use FindBin;
 
-$feed = $t->app->parse_rss("t/samples/atom-full.xml");
-is $feed->{title}, 'Content Considered Harmful Atom Feed';
-is $feed->{htmlUrl}, 'http://blog.jrock.us/', "link without rel";
-
-my $e = $feed->{items}[0];
-ok $e->{link}, 'entry link without rel';
-is join("", @{$e->{tags}}), "Catalyst", "atom:category support";
-is time2isoz($e->{published}), "2006-08-09 19:07:58Z", "atom:updated";
-# this test fails, but I'm OK with that:
-# like $e->{content}, qr/^<div class="pod">/, "xhtml content";
-
+my $t = Test::Mojo->new(app);
+push @{ app->static->paths }, path($FindBin::Bin)->child('samples');
 
 my $reader = Mojolicious::Plugin::FeedReader->new( ua => $t->app->ua );
-$feed = undef;
+my $feed;
+
 # parse a URL
-$t->get_ok('/atom.xml');
-$abs_feed_url = $t->tx->req->url->to_abs;
-$feed = $reader->parse_rss($abs_feed_url);
+$feed = $reader->parse_rss( Mojo::URL->new("/atom.xml") );
 is( $feed->{title}, 'First Weblog' );
 
-$delay = Mojo::IOLoop->delay(
+my $delay = Mojo::IOLoop->delay(
     sub {
         my ( $delay, $feed ) = @_;
         is( $feed->{title}, 'First Weblog' );
     }
 );
-$end = $delay->begin(0);
+my $end = $delay->begin(0);
 
 # parse a URL - non-blocking - this revealed a bug, yay!
 $reader->parse_rss(
-    $abs_feed_url,
+    Mojo::URL->new("/atom.xml"),
     sub {
         my ($feed) = @_;
         $end->($feed);
     }
 );
-$delay->wait;
+$delay->wait unless ( Mojo::IOLoop->is_running );
 
+done_testing();
+};
+
+subtest "enclosures" => sub {
+
+use Mojo::Base -strict;
+
+use Test::More;
+use Mojo::File 'path';
+use Mojolicious::Plugin::FeedReader;
+
+use FindBin;
 
 my %test_results = (
     'rss20-multi-enclosure.xml' => [
@@ -396,12 +474,16 @@ my %test_results = (
     ],
 );
 
+my $samples = path($FindBin::Bin)->child('samples');
 
-$reader = Mojolicious::Plugin::FeedReader->new;
+my $reader = Mojolicious::Plugin::FeedReader->new;
 
 while ( my ( $file, $result ) = each %test_results ) {
     my $feed = $reader->parse_rss( $samples->child($file) );
     is_deeply( $feed->{items}->[0]->{enclosures}, $result );
 }
 
+done_testing();
+
+};
 done_testing();
