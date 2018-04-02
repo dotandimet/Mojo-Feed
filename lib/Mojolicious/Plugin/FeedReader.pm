@@ -1,9 +1,10 @@
 package Mojolicious::Plugin::FeedReader;
 use Mojo::Base 'Mojolicious::Plugin';
 
-our $VERSION = '0.13';
-
 use Mojo::Feed::Reader;
+
+our $VERSION = $Mojo::Feed::VERSION;
+
 use Scalar::Util qw(blessed);
 
 has feed_reader => sub { Mojo::Feed::Reader->new };
