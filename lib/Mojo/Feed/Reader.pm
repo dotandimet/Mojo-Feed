@@ -193,7 +193,7 @@ Mojo::Feed::Reader - Fetch feeds
     $feedr->discover("search.cpan.org")->then(sub {
       my (@feeds) = @_;
       if (@feeds) {
-        print $_->url for (@feeds);
+        print $_ for (@feeds);
       }
     })->catch(sub { die "Error: ", @_; });
 
