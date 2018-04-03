@@ -2,6 +2,10 @@ Revision history for Perl extension Mojo-Feed
 
 {{$NEXT}}
 
+0.15 2018-04-03T03:54:50Z
+
+    - Fix version string in plugin for PAUSE indexer
+
 0.14 2018-04-02T21:10:45Z
 
     - Add backwards-compatible new version of Mojolicious::Plugin::FeedReader, using Mojo::Feed::Reader
