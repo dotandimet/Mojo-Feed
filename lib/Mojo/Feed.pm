@@ -2,7 +2,7 @@ package Mojo::Feed;
 use Mojo::Base '-base';
 
 use overload
-  bool     => sub {1},
+  bool     => sub { shift->is_valid },
   '""'     => sub { shift->to_string },
   fallback => 1;
 
@@ -61,6 +61,10 @@ has items => sub {
     ->map(sub { Mojo::Feed::Item->new(dom => $_, feed => $self) })
     ->each(sub { weaken $_->{feed} });
 };
+
+sub is_valid {
+  shift->dom->children->first->tag =~ /^(feed|rss|rdf|rdf:rdf)$/i;
+}
 
 sub to_hash {
   my $self = shift;
