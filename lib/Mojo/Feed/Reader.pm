@@ -259,6 +259,9 @@ objects)
 
 A minimalist liberal RSS/Atom parser, using Mojo::DOM queries.
 
+If the parsed object is not a feed (for example, the parser was given an HTML page),
+the method will return undef.
+
 =head2 parse_opml
 
   my @subscriptions = Mojo::Feed->parse_opml( 'mysubs.opml' );

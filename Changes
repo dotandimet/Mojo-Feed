@@ -2,6 +2,9 @@ Revision history for Perl extension Mojo-Feed
 
 {{$NEXT}}
 
+    - Added Mojo::Feed::is_valid() to assert object is an actual feed (Mario Domgoergen)
+    - Change Mojo::Feed::Reader::parse() to return undef if feed is not valid
+
 0.15 2018-04-03T03:54:50Z
 
     - Fix version string in plugin for PAUSE indexer
