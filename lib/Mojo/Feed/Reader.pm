@@ -63,7 +63,8 @@ sub parse {
   $charset ||= $self->charset;
   $body = $charset ? decode($charset, $body) // $body : $body;
   $source = $url || $file;
-  return Mojo::Feed->new(body => $body, source => $source);
+  my $feed = Mojo::Feed->new(body => $body, source => $source);
+  return ($feed->is_valid) ? $feed : undef;
 }
 
 sub load {
@@ -129,7 +130,7 @@ sub _find_feed_links {
 
     # call me crazy, but maybe this is just a feed served as HTML?
     unless (@feeds) {
-      if ($self->parse($res->body)->description) {
+      if ($self->parse($res->body, $res->content->charset)) {
         push @feeds, Mojo::URL->new($url)->to_abs;
       }
     }

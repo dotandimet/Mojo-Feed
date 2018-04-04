@@ -43,20 +43,25 @@ sub parse_rss {
       $args[0],
       sub {
         my $tx = pop;
-        my $feed;
+        my $feed = undef;
         if ($tx->success) {
-          $feed = $self->feed_reader->parse($tx->res->body,
-            $tx->res->content->charset)->to_hash;
-          $feed->{'htmlUrl'} = delete $feed->{'html_url'};
-          for (keys %$feed) { delete $feed->{$_} if ($feed->{$_} eq '') };
-          delete $feed->{'items'} if (scalar @{$feed->{'items'}} == 0);
+          my $feed_obj = $self->feed_reader->parse($tx->res->body,
+            $tx->res->content->charset);
+          if ($feed_obj) {
+            $feed = $feed_obj->to_hash;
+            $feed->{'htmlUrl'} = delete $feed->{'html_url'};
+            for (keys %$feed) { delete $feed->{$_} if ($feed->{$_} eq '') };
+            delete $feed->{'items'} if (scalar @{$feed->{'items'}} == 0);
+          }
         }
         $args[1]->($feed);
       }
     );
   }
   else {
-    my $feed = $self->feed_reader->parse(@args)->to_hash;
+    my $feed_obj = $self->feed_reader->parse(@args);
+    return undef unless ($feed_obj);
+    my $feed = $feed_obj->to_hash;
     $feed->{'htmlUrl'} = delete $feed->{'html_url'};
     for (keys %$feed) { delete $feed->{$_} if ($feed->{$_} eq '') };
     delete $feed->{'items'} if (scalar @{$feed->{'items'}} == 0);

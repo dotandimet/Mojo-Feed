@@ -149,6 +149,11 @@ ok(! exists $feed->{title}, 'no title from html page');
 ok(! exists $feed->{description}, 'no description from html page');
 ok(! exists $feed->{htmlUrl}, 'no htmlUrl from html page');
 
+# Invalid input:
+$feed = $t->app->parse_feed("<xml><garbage>this is invalid</garbage></xml>");
+is($feed, undef, 'we do not construct an invalid feed');
+ok(! exists $feed->{items}, 'no entries from dummy xml');
+
 
 # encoding issue when reading utf-8 text from file vs. from URL:
 

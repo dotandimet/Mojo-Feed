@@ -148,11 +148,16 @@ is($feed->items->[1]->author, 'webmaster@kcrw.org (KCRW, Elvis Mitchell)', 'auth
 
 # Let's do some errors - trying to parse html responses, basically
 $feed = Mojo::Feed->new( body => $t->app->ua->get('/link1.html')->res->body );
-
+ok( ! $feed->is_valid, "feed is not valid");
 is( scalar $feed->items->each, 0,     'no entries from html page' );
 is( $feed->title,              undef, 'no title from html page' );
 is( $feed->description,        undef, 'no description from html page' );
 is( $feed->html_url,           undef, 'no htmlUrl from html page' );
+
+# Invalid input:
+$feed = $feedr->parse("<xml><garbage>this is invalid</garbage></xml>");
+is($feed, undef, "invalid feed not defined");
+ok(! exists $feed->{items}, 'no entries from dummy xml');
 
 # encoding issue when reading utf-8 text from file vs. from URL:
 
