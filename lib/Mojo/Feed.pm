@@ -16,6 +16,9 @@ use Scalar::Util 'weaken';
 has body => '';
 has 'source';
 
+# has _dom_class => 'Mojo::DOM';
+has _item_class => 'Mojo::Feed::Item';
+
 has dom => sub {
   my ($self) = @_;
   my $body = $self->body;
@@ -55,11 +58,18 @@ foreach my $k (keys %selector) {
   };
 }
 
+sub _construct_item {
+    my ($self, $node) = @_;
+    my $cls = $self->_item_class;
+    my $item = $cls->new(dom => $node, feed => $self);
+    weaken $item->{feed};
+    return $item;
+};
+
 has items => sub {
   my $self = shift;
   $self->dom->find('item, entry')
-    ->map(sub { Mojo::Feed::Item->new(dom => $_, feed => $self) })
-    ->each(sub { weaken $_->{feed} });
+    ->map(sub{ $self->_construct_item($_) });
 };
 
 sub is_valid {

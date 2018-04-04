@@ -19,6 +19,8 @@ our %is_feed = map { $_ => 1 } @feed_types;
 has ua => sub { Mojo::UserAgent->new };
 has charset => 'UTF-8';
 
+has _feed_class => 'Mojo::Feed';
+
 sub parse {
   my ($self, $xml, $charset) = @_;
   my ($body, $source, $url, $file);
@@ -63,7 +65,8 @@ sub parse {
   $charset ||= $self->charset;
   $body = $charset ? decode($charset, $body) // $body : $body;
   $source = $url || $file;
-  my $feed = Mojo::Feed->new(body => $body, source => $source);
+  my $cls = $self->_feed_class;
+  my $feed = $cls->new(body => $body, source => $source);
   return ($feed->is_valid) ? $feed : undef;
 }
 
