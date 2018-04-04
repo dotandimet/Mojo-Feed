@@ -93,7 +93,11 @@ Return a hash reference representing the feed.
 
 ## to\_string
 
-Return a XML serialized text of the feeds's Mojo::DOM node. Note that this can be different from the original XML text in the feed.
+Return a XML serialized text of the feed's Mojo::DOM node. Note that this can be different from the original XML text in the feed.
+
+## is\_valid
+
+Returns true if the top-level element of the DOM is a valid RSS (0.9x, 1.0, 2.0) or Atom tag. Otherwise, returns false.
 
 # CREDITS
 
