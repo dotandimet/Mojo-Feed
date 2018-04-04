@@ -178,7 +178,12 @@ Return a hash reference representing the feed.
 
 =head2 to_string
 
-Return a XML serialized text of the feeds's Mojo::DOM node. Note that this can be different from the original XML text in the feed.
+Return a XML serialized text of the feed's Mojo::DOM node. Note that this can be different from the original XML text in the feed.
+
+=head2 is_valid
+
+Returns true if the top-level element of the DOM is a valid RSS (0.9x, 1.0, 2.0) or Atom tag. Otherwise, returns false.
+
 
 =head1 CREDITS
 

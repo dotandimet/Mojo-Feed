@@ -149,9 +149,10 @@ B<Mojolicious::Plugin::FeedReader> implements minimalistic helpers for identifyi
 fetching and parsing RSS and Atom Feeds.  It has minimal dependencies, relying as
 much as possible on Mojolicious components - Mojo::UserAgent for fetching feeds and
 checking URLs, Mojo::DOM for XML/HTML parsing.
-It is therefore rather fragile and naive, and should be considered Experimental/Toy
-code - B<use at your own risk>.
 
+The feed parsing code has been restructured as a stand-alone module, L<Mojo::Feed>.
+The current version of the plugin (packaged inside the L<Mojo::Feed> distribution)
+maintains backwards-compatibility but uses L<Mojo::Feed::Reader> internally.
 
 =head1 METHODS
 
@@ -218,7 +219,7 @@ A minimalist liberal RSS/Atom parser, using Mojo::DOM queries.
 
 Dates are parsed using L<HTTP::Date>.
 
-If parsing fails (for example, the parser was given an HTML page), the helper will return undef.
+If the parsed object is not a feed (for example, the parser was given an HTML page), the helper will return undef.
 
 On success, the result returned is a hashref with the following keys:
 
@@ -290,7 +291,7 @@ L<Mojolicious::Plugin::FeedReader> can also be used directly, rather than as a p
   my ($feed) = $fr->find_feeds($url);
   ...
 
-In the future, the feed-parsing code will probably move into its own module.
+However, it is recommended you use L<Mojo::Feed::Reader> directly instead.
 
 
 =head1 CREDITS
