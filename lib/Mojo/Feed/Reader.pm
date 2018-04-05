@@ -22,49 +22,47 @@ has charset => 'UTF-8';
 sub parse {
   my ($self, $xml, $charset) = @_;
   my ($body, $source, $url, $file);
-  return unless ($xml);
-  if (!ref $xml) {
-    if ($xml =~ /^\</) { # looks like XML string...
-      $body = $xml;
-    }
-    elsif ($xml =~ /^https?\:/) {
-      $url = Mojo::URL->new($xml);
-    }
-    elsif (-r $xml) { # a readable file path
-      $file = path($xml);
-    }
-    else {
-      die "unknown argument $xml";
-    }
-  }
-  else {  # $xml is a reference
-   if (blessed $xml && $xml->can('slurp')) {
-      $file = $xml;
-   }
-   elsif (blessed $xml && $xml->isa('Mojo::URL')) {
-      $url = $xml->clone();
-   }
-   elsif (blessed $xml && $xml->isa('Mojo::DOM')) {
-      $body = $xml->to_string;  # we don't need your dom, we make our own
-   }
-   elsif (ref $xml eq 'SCALAR') {
-        $body = $$xml;
-   }
-   else {
-      die "unknown argument $xml";
-    }
-  }
-  if ($url) {
+  return undef unless ($xml);
+  $body = $self->_from_string($xml) || undef;
+  if (!$body && ($url = $self->_from_url($xml))) {
     ($body, $charset) = $self->load($url);
   }
-  if ($file) {
+  if (!$body && ($file = $self->_from_file($xml))) {
     $body = $file->slurp;
   }
+  die "unknown argument $xml" unless ($body);
   $charset ||= $self->charset;
   $body = $charset ? decode($charset, $body) // $body : $body;
   $source = $url || $file;
   my $feed = Mojo::Feed->new(body => $body, source => $source);
   return ($feed->is_valid) ? $feed : undef;
+}
+
+sub _from_file {
+  my ($self, $xml) = @_;
+  my $file
+    = (ref $xml)
+    ? (blessed $xml && $xml->can('slurp'))
+      ? $xml
+      : undef
+    : (-r "$xml") ? Mojo::File->new($xml)
+    :               undef;
+  return $file;
+}
+
+sub _from_url {
+  my ($self, $xml) = @_;
+  my $url
+    = (blessed $xml && $xml->isa('Mojo::URL')) ? $xml->clone()
+    : ($xml =~ /^https?\:/) ? Mojo::URL->new("$xml")
+    :                         undef;
+  return $url;
+}
+
+sub _from_string {
+  my ($self, $xml) = @_;
+  my $str = (!ref $xml) ? $xml : (ref $xml eq 'SCALAR') ? $$xml : '';
+  return ($str =~ /^\s*\</s) ? $str : undef;
 }
 
 sub load {
