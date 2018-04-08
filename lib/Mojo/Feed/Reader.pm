@@ -95,7 +95,7 @@ sub discover {
 sub _find_feed_links {
   my ($self, $url, $res) = @_;
 
-  state $feed_ext = qr/\.(?:rss|xml|rdf)$/;
+  state $feed_exp = qr/((\.(?:rss|xml|rdf)$)|(\/feed\/)|(feeds*\.))/;
   my @feeds;
 
   # use split to remove charset attribute from content_type
@@ -121,7 +121,7 @@ sub _find_feed_links {
     });
     $res->dom->find('a')->grep(sub {
       $_->attr('href')
-        && Mojo::URL->new($_->attr('href'))->path =~ /$feed_ext/io;
+        && $_->attr('href') =~ /$feed_exp/io;
     })->each(sub {
       push @feeds, Mojo::URL->new($_->attr('href'))->to_abs($base);
     });
