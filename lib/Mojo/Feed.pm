@@ -22,8 +22,20 @@ has dom => sub {
   return if !$body;
   return Mojo::DOM->new($body);
 };
+has feed_type => sub {
+  my $top     = shift->dom->children->first;
+  my $tag     = $top->tag;
+  my $version = $top->attr('version');
+  my $ns = $top->attr('namespace');
+  return
+      ($tag =~ /feed/i) ? ($version) ? 'Atom ' . $version : 'Atom 1.0'
+    : ($tag =~ /rss/i)  ? 'RSS ' . $version
+    : ($tag =~ /rdf/i)  ? 'RSS 1.0'
+    :                     'unknown';
+};
 
-my %selector = (
+
+my %generic = (
   description => ['description', 'tagline', 'subtitle'],
   published   => [
     'published', 'pubDate', 'dc\:date', 'created',
@@ -36,11 +48,11 @@ my %selector = (
   html_url => ['link:not([rel])', 'link[rel=alternate]'],
 );
 
-foreach my $k (keys %selector) {
+foreach my $k (keys %generic) {
   has $k => sub {
     my $self = shift;
-    for my $selector (@{$selector{$k}}) {
-      if (my $p = $self->dom->at("channel > $selector, feed > $selector")) {
+    for my $generic (@{$generic{$k}}) {
+      if (my $p = $self->dom->at("channel > $generic, feed > $generic")) {
         if ($k eq 'author' && $p->at('name')) {
           return $p->at('name')->text;
         }
@@ -68,7 +80,7 @@ sub is_valid {
 
 sub to_hash {
   my $self = shift;
-  my $hash = {map { $_ => '' . ($self->$_ || '') } (keys %selector)};
+  my $hash = {map { $_ => '' . ($self->$_ || '') } (keys %generic)};
   $hash->{items} = $self->items->map('to_hash')->to_array;
   return $hash;
 }
@@ -184,6 +196,9 @@ Return a XML serialized text of the feed's Mojo::DOM node. Note that this can be
 
 Returns true if the top-level element of the DOM is a valid RSS (0.9x, 1.0, 2.0) or Atom tag. Otherwise, returns false.
 
+=head2 feed_type
+
+Detect type of feed - returns one of "RSS 1.0", "RSS 2.0", "Atom 0.3", "Atom 1.0" or "unknown"
 
 =head1 CREDITS
 
