@@ -262,7 +262,7 @@ the method will return undef.
 
 =head2 parse_opml
 
-  my @subscriptions = Mojo::Feed->parse_opml( 'mysubs.opml' );
+  my @subscriptions = Mojo::Feed::Reader->new->parse_opml( 'mysubs.opml' );
   foreach my $sub (@subscriptions) {
     say 'RSS URL is: ',     $sub->{xmlUrl};
     say 'Website URL is: ', $sub->{htmlUrl};
