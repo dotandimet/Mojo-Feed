@@ -21,10 +21,12 @@ diag "Will run " . scalar(@subs) . " tests\n";
 my @promises;
 my %tested;
 foreach my $sub (@subs) {
+   
    push @promises,
-   $fdr->discover($sub->{htmlUrl})->then(sub { 
+   $fdr->discover($sub->{htmlUrl})->catch(sub { my $err = join(', ', @_); is(1,0, ($sub->{htmlUrl} || 'missing_url') . "failed with $err");})
+    ->then(sub { 
    my $feed_url = shift;
-   is($feed_url, $sub->{xmlUrl}, "found feed url");
+   is($feed_url, $sub->{xmlUrl}, "found feed url for " . $sub->{htmlUrl});
    $tested{ $sub->{htmlUrl} } = 1;
 })
 }
