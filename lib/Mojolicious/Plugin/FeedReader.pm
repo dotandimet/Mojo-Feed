@@ -49,7 +49,7 @@ sub parse_rss {
             $tx->res->content->charset);
           if ($feed_obj) {
             $feed = $feed_obj->to_hash;
-            $feed->{'htmlUrl'} = delete $feed->{'html_url'};
+            $feed->{'htmlUrl'} = delete $feed->{'link'};
             for (keys %$feed) { delete $feed->{$_} if ($feed->{$_} eq '') };
             delete $feed->{'items'} if (scalar @{$feed->{'items'}} == 0);
           }
@@ -62,7 +62,7 @@ sub parse_rss {
     my $feed_obj = $self->feed_reader->parse(@args);
     return undef unless ($feed_obj);
     my $feed = $feed_obj->to_hash;
-    $feed->{'htmlUrl'} = delete $feed->{'html_url'};
+    $feed->{'htmlUrl'} = delete $feed->{'link'};
     for (keys %$feed) { delete $feed->{$_} if ($feed->{$_} eq '') };
     delete $feed->{'items'} if (scalar @{$feed->{'items'}} == 0);
     return $feed;

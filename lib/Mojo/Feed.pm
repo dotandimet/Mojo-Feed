@@ -43,9 +43,8 @@ my %generic = (
   ],
   author   => ['author', 'dc\:creator', 'webMaster'],
   title    => ['title'],
-  tagline  => ['tagline'],
-  subtitle => ['subtitle'],
-  html_url => ['link:not([rel])', 'link[rel=alternate]'],
+  subtitle => ['subtitle', 'tagline'],
+  link     => ['link:not([rel])', 'link[rel=alternate]'],
 );
 
 foreach my $k (keys %generic) {
@@ -135,29 +134,25 @@ The parsed feed as <Mojo::DOM> object.
 =head2 source
 
 The source of the feed; either a L<Mojo::Path> or L<Mojo::URL> object, or
-undef if the feed source was a string scalar.
+undef if the feed source was a string.
 
 =head2  title
 
-Returns the feeds title.
+Returns the feed's title.
 
-=head2  description 
+=head2  description
 
-May be filled from subtitle or tagline if absent
+Description of the feed, filled from channel description (RSS), subtitle (Atom 1.0) or tagline (Atom 0.3)
 
-=head2  html_url
+=head2  link
 
-web page URL associated with the feed
+Web page URL associated with the feed
 
 =head2  items
 
 L<Mojo::Collection> of L<Mojo::Feed::Item> objects representing feed news items
 
 =head2  subtitle
-
-Optional feed description
-
-=head2  tagline
 
 Optional feed description
 
