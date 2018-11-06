@@ -30,7 +30,7 @@ sub parse {
   if (!$body && ($file = $self->_from_file($xml))) {
     $body = $file->slurp;
   }
-  die "unknown argument $xml" unless ($body);
+  croak "unknown argument $xml" unless ($body);
   $charset ||= $self->charset;
   $body = $charset ? decode($charset, $body) // $body : $body;
   $source = $url || $file;
@@ -68,11 +68,11 @@ sub _from_string {
 sub load {
   my ($self, $url) = @_;
   my $tx = $self->ua->get($url);
-  if (!$tx->success) {
-    croak "Error getting feed from url ", $url, ": ",
-      (($tx->error) ? $tx->error->{message} : '');
+  my $result = $tx->result; # this will croak on network errors
+  if ($result->is_error) {
+    croak "Error getting feed from url ", $url, ": ", $result->message;
   }
-  return ($tx->res->body, $tx->res->content->charset);
+  return ($result->body, $result->content->charset);
 }
 
 # discover - get RSS/Atom feed URL from argument.
@@ -83,9 +83,9 @@ sub discover {
 
 #  $self->ua->max_redirects(5)->connect_timeout(30);
   return $self->ua->get_p($url)
-    ->catch(sub { my ($err) = shift; die "Connection Error: $err" })->then(sub {
+    ->catch(sub { my ($err) = shift; croak "Connection Error: $err" })->then(sub {
     my ($tx) = @_;
-    if ($tx->success && $tx->res->code == 200) {
+    if ($tx->res->is_success && $tx->res->code == 200) {
       return $self->_find_feed_links($tx->req->url, $tx->res);
     }
     return;

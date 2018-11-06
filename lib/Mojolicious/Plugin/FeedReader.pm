@@ -44,9 +44,10 @@ sub parse_rss {
       sub {
         my $tx = pop;
         my $feed = undef;
-        if ($tx->success) {
-          my $feed_obj = $self->feed_reader->parse($tx->res->body,
-            $tx->res->content->charset);
+        my $result = $tx->result;
+        if ($result->is_success) {
+          my $feed_obj = $self->feed_reader->parse($result->body,
+            $result->content->charset);
           if ($feed_obj) {
             $feed = $feed_obj->to_hash;
             $feed->{'htmlUrl'} = delete $feed->{'link'};
