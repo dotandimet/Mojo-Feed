@@ -2,6 +2,8 @@ Revision history for Perl extension Mojo-Feed
 
 {{$NEXT}}
 
+0.17 2018-11-07T10:08:44Z
+
     - Make autodiscovery more liberal (get any url with containing the word "feed")
     - Added feed_type method to Mojo::Feed
     - Combine tagline attribute of Mojo::Feed with subtitle attribute

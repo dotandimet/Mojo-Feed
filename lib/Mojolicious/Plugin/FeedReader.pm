@@ -3,7 +3,7 @@ use Mojo::Base 'Mojolicious::Plugin';
 
 use Mojo::Feed::Reader;
 
-our $VERSION = "0.16";
+our $VERSION = "0.17";
 
 use Scalar::Util qw(blessed);
 
