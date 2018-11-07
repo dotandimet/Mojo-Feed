@@ -6,7 +6,7 @@ use overload
   '""'     => sub { shift->to_string },
   fallback => 1;
 
-our $VERSION = "0.16";
+our $VERSION = "0.17";
 
 use Mojo::Feed::Item;
 use Mojo::DOM;
