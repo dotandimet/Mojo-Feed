@@ -44,7 +44,7 @@
       "runtime" : {
          "requires" : {
             "HTTP::Date" : "6.02",
-            "Mojolicious" : "7.52",
+            "Mojolicious" : "8.03",
             "Time::Zone" : "2.2",
             "perl" : "5.010"
          }

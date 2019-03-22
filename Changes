@@ -2,6 +2,8 @@ Revision history for Perl extension Mojo-Feed
 
 {{$NEXT}}
 
+    - Bump required Mojolicious version to 8.03 just to use a weak attribute.
+
 0.17 2018-11-07T10:08:44Z
 
     - Make autodiscovery more liberal (get any url with containing the word "feed")

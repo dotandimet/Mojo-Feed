@@ -11,7 +11,6 @@ our $VERSION = "0.17";
 use Mojo::Feed::Item;
 use Mojo::DOM;
 use HTTP::Date;
-use Scalar::Util 'weaken';
 
 has body => '';
 has 'source';
