@@ -69,8 +69,7 @@ foreach my $k (keys %generic) {
 has items => sub {
   my $self = shift;
   $self->dom->find('item, entry')
-    ->map(sub { Mojo::Feed::Item->new(dom => $_, feed => $self) })
-    ->each(sub { weaken $_->{feed} });
+    ->map(sub { Mojo::Feed::Item->new(dom => $_, feed => $self) });
 };
 
 sub is_valid {

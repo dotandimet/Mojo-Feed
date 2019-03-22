@@ -17,7 +17,7 @@ has tags => sub {
 };
 
 has 'dom';
-has 'feed';
+has feed => undef, weak => 1;
 
 has summary => sub { shift->description };
 
