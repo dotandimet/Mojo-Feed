@@ -1,5 +1,10 @@
 package Mojo::Feed;
 use Mojo::Base '-base';
+use Mojo::File;
+use Mojo::Util 'decode';
+use Carp qw(carp croak);
+use Scalar::Util qw(blessed);
+
 
 use overload
   bool     => sub { shift->is_valid },
@@ -12,15 +17,44 @@ use Mojo::Feed::Item;
 use Mojo::DOM;
 use HTTP::Date;
 
-has body => '';
-has 'source';
+has url => sub { Mojo::URL->new() };
+
+has path => sub { Mojo::File->new() };
+
+has source => '';
+# sub {
+#     my $self = shift;
+#     return ($self->url .'') ? $self->url : $self->path;
+# };
+
+has body => sub {
+    my $self = shift;
+    if ($self->url . "") {
+        croak "Need to load this file first from " . $self->url;
+    }
+    if (my $file = $self->path) {
+        if (ref $file && blessed $file && $file->can('slurp')) {
+          return $file->slurp;
+        }
+        if (-f $file) { # path was set to a string, but a filename...
+          return $self->path(Mojo::File->new($file))->slurp;
+        }
+    }
+    return '';
+};
+
+has charset => 'UTF-8';
+
+has text => sub {
+    my $self = shift;
+    return decode($self->charset, $self->body);
+};
 
 has dom => sub {
   my ($self) = @_;
-  my $body = $self->body;
-  return if !$body;
-  return Mojo::DOM->new($body);
+  return Mojo::DOM->new($self->text);
 };
+
 has feed_type => sub {
   my $top     = shift->dom->children->first;
   my $tag     = $top->tag;
@@ -32,7 +66,6 @@ has feed_type => sub {
     : ($tag =~ /rdf/i)  ? 'RSS 1.0'
     :                     'unknown';
 };
-
 
 my %generic = (
   description => ['description', 'tagline', 'subtitle'],
