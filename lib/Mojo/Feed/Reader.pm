@@ -27,12 +27,11 @@ sub parse {
     my %args;
     $args{'charset'} = $charset if ($charset);
     $body = $self->_from_string($xml) || undef;
-    if ( !$body && ( $url = $self->_from_url($xml) ) ) {
-        ( $body, $charset, $url ) = $self->load($url);
-    }
     if ( !$body && ( $file = $self->_from_file($xml) ) ) {
-        
         $body = $file->slurp;
+    }
+    if ( !$body && ( $url = $self->_from_url($xml) ) ) {
+        ( $body, $charset, $url ) = $self->load($url); # url might change by redirect
     }
     croak "unknown argument $xml" unless ($body);
     $charset ||= $self->charset;
