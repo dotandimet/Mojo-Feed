@@ -1,16 +1,16 @@
 {
    "abstract" : "Mojo::DOM-based parsing of RSS & Atom feeds",
    "author" : [
-      "Dotan Dimet, Mario Domgoergen"
+      "Dotan Dimet <dotan@corky.net>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Minilla/v3.0.14, CPAN::Meta::Converter version 2.150010",
+   "generated_by" : "Minilla/v3.1.4, CPAN::Meta::Converter version 2.150010",
    "license" : [
-      "perl_5"
+      "artistic_2"
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
-      "version" : "2"
+      "version" : 2
    },
    "name" : "Mojo-Feed",
    "no_index" : {
@@ -70,8 +70,8 @@
    "version" : "0.17",
    "x_authority" : "cpan:DOTAN",
    "x_contributors" : [
-      "Dotan Dimet <dotan@corky.net>",
       "Mario Domgoergen <mdom@taz.de>"
    ],
-   "x_serialization_backend" : "JSON::PP version 2.27400_02"
+   "x_serialization_backend" : "JSON::PP version 4.02",
+   "x_static_install" : 1
 }
