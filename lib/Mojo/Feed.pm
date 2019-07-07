@@ -276,7 +276,7 @@ Some tests adapted from L<Feed::Find> and L<XML:Feed>, Feed auto-discovery adapt
 Copyright (C) Dotan Dimet.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+it under the terms of the Artistic License version 2.0.
 
 =head1 AUTHOR
 
