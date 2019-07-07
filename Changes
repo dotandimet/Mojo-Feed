@@ -3,6 +3,13 @@ Revision history for Perl extension Mojo-Feed
 {{$NEXT}}
 
     - Bump required Mojolicious version to 8.03 just to use a weak attribute.
+    - Allow Mojo::Feed to handle loading without help of Mojo::Feed::Reader,
+      by setting *file* or *url* attributes (or set *body* directly to parse
+      from a string).
+    - Change license to Artistic 2.0 (previously I used the Minilla default,
+      which is the same licenses as Perl 5, Artistic+GPL; this prevented the 
+      license from showing up on github search).
+    - 
 
 0.17 2018-11-07T10:08:44Z
 
