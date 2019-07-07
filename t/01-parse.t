@@ -147,8 +147,7 @@ $entry = $feed->items->[0];
 isnt( $entry->summary, 'This is for &8220;itunes sake&8221;.' );
 is( $entry->description, 'this is a <b>test</b>' );
 is(
-    $entry->content, '<p>This is more of the same</p>
-'
+    $entry->content, '<p>This is more of the same</p>'
 );
 
 # author vs itunes:author:
