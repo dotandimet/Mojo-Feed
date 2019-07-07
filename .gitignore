@@ -29,3 +29,6 @@ cover_db/
 MYMETA.*
 
 /Mojo-Feed-*
+/.build
+!Build/
+!META.json
