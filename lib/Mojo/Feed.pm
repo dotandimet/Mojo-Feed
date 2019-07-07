@@ -1,6 +1,8 @@
 package Mojo::Feed;
 use Mojo::Base '-base';
 use Mojo::File;
+use Mojo::URL;
+use Mojo::UserAgent;
 use Mojo::Util 'decode';
 use Carp qw(carp croak);
 use Scalar::Util qw(blessed);
@@ -17,17 +19,31 @@ use Mojo::Feed::Item;
 use Mojo::DOM;
 use HTTP::Date;
 
+has ua => sub { Mojo::UserAgent->new() };
 has url => sub { Mojo::URL->new() };
 
 has file => sub { Mojo::File->new() };
 
-has source => '';
-# sub {
-#     my $self = shift;
-#     return ($self->url .'') ? $self->url : $self->file;
-# };
+has source => sub {
+    my $self = shift;
+    return
+        ( $self->url ne '' ) ? $self->url
+      : ( -f $self->file )   ? $self->file
+      :                        undef;
+};
 
-has body => '';
+has body => sub {
+    my $self = shift;
+    if ($self->url ne '') {
+        return $self->_load();
+    }
+    elsif (-f $self->file && -r $self->file) {
+        return $self->file->slurp();
+    }
+    else {
+        return '';
+    }
+};
 
 has charset => 'UTF-8';
 
@@ -94,70 +110,20 @@ sub is_valid {
   shift->dom->children->first->tag =~ /^(feed|rss|rdf|rdf:rdf)$/i;
 }
 
-sub new {
-  @_ > 3 ? shift->SUPER::new->parse(@_) : shift->SUPER::new
-}
-
-sub parse {
-    my ( $self, $xml, $charset ) = @_;
-    return undef unless ($xml);
-    my ( $body, $source, $url, $file );
-    my %args;
-    $args{'charset'} = $charset if ($charset);
-    $body = $self->_from_string($xml) || undef;
-    if ( !$body && ( $file = $self->_from_file($xml) ) ) {
-        $body = $file->slurp;
-    }
-    if ( !$body && ( $url = $self->_from_url($xml) ) ) {
-        ( $body, $charset, $url ) = $self->load($url); # url might change by redirect
-    }
-    croak "unknown argument $xml" unless ($body);
-    $charset ||= $self->charset;
-    $source = $url || $file;
-    my $feed =
-      Mojo::Feed->new( body => $body, charset => $charset, source => $source );
-    return ( $feed->is_valid ) ? $feed : undef;
-}
-
-sub _from_string {
-    my ( $self, $xml ) = @_;
-    my $str = ( !ref $xml ) ? $xml : ( ref $xml eq 'SCALAR' ) ? $$xml : '';
-    return ( $str =~ /^\s*\</s ) ? $str : undef;
-}
-
-sub _from_url {
-    my ( $self, $xml ) = @_;
-    my $url =
-        ( blessed $xml && $xml->isa('Mojo::URL') ) ? $xml->clone()
-      : ( $xml =~ /^https?\:/ ) ? Mojo::URL->new("$xml")
-      :                           undef;
-    return $url;
-}
-
-sub _from_file {
-    my ( $self, $xml ) = @_;
-    my $file =
-        ( ref $xml )
-      ? ( blessed $xml && $xml->can('slurp') )
-          ? $xml
-          : undef
-      : ( -r "$xml" ) ? Mojo::File->new($xml)
-      :                 undef;
-    return $file;
-}
-
-sub load {
-    my ( $self, $url ) = @_;
-    my $tx     = $self->ua->get($url);
+sub _load {
+    my ( $self ) = @_;
+    my $tx     = $self->ua->get($self->url);
     my $result = $tx->result;            # this will croak on network errors
     if ( $result->is_error ) {
-        croak "Error getting feed from url ", $url, ": ", $result->message;
+        croak "Error getting feed from url ", $self->url, ": ", $result->message;
     }
     elsif ( $result->code == 301 || $result->code == 302 ) {
         my $new_url = Mojo::URL->new( $result->headers->location );
-        return ( $self->load($new_url) );
+        $self->url($new_url);
+        return $self->_load();
     }
-    return ( $result->body, $result->content->charset, $url );
+    $self->charset($result->content->charset) if ($result->content->charset);
+    return $result->body;
 }
 
 
