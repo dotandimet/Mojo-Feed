@@ -90,7 +90,6 @@ $feed =
 my $excp = $@ unless (eval {
     ($feed->title eq 'First Weblog') ? 1 : 2;
 });
-diag('got excp: ' . $excp);
 like($excp, qr/Number of redirects exceeded when loading feed/, 'Max redirects exception OK');
 $feed =
   Mojo::Feed->new( url => Mojo::URL->new("/feed/1"), max_redirects => 5 );

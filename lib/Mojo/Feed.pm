@@ -40,11 +40,8 @@ has body => sub {
     if ($self->url ne '') {
         return $self->_load();
     }
-    elsif (-f $self->file && -r $self->file) {
+    else { # skip file tests, just slurp (for Mojo::Asset::File)
         return $self->file->slurp();
-    }
-    else {
-        return '';
     }
 };
 
@@ -90,7 +87,7 @@ foreach my $k (keys %generic) {
         if ($k eq 'author' && $p->at('name')) {
           return trim $p->at('name')->text;
         }
-        my $text = trim( $p->text || $p->content || $p->attr('href') );
+        my $text = trim( $p->text || $p->content || $p->attr('href') || '');
         if ($k eq 'published') {
           return str2time($text);
         }
