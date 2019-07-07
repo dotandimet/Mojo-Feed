@@ -13,7 +13,7 @@ use overload
   '""'     => sub { shift->to_string },
   fallback => 1;
 
-our $VERSION = "0.17";
+our $VERSION = "0.18";
 
 use Mojo::Feed::Item;
 use Mojo::DOM;
@@ -151,14 +151,21 @@ Mojo::Feed - Mojo::DOM-based parsing of RSS & Atom feeds
 
 =head1 SYNOPSIS
 
-    use Mojo::Feed::Reader;
     use Mojo::Feed;
+    use Mojo::File qw(path);
 
-    my $feed = Mojo::Feed::Reader->new->parse("atom.xml");
+    my $feed = Mojo::Feed->new->parse(file => path("atom.xml"));
     print $feed->title, "\n",
       $feed->items->map('title')->join("\n");
 
     $feed = Mojo::Feed->new( body => $string );
+    $feed = Mojo::Feed->new( url => $rss_url );
+
+    my $feed = Mojo::Feed->new(
+      url => "https://github.com/dotandimet/Mojo-Feed/commits/master.atom");
+    say $feed->title;
+    $feed->items->each(
+      sub { say $_->title, q{ }, Mojo::Date->new($_->published); });
 
 =head1 DESCRIPTION
 
@@ -167,7 +174,9 @@ fetching and parsing RSS and Atom Feeds.  It relies on
 L<Mojo::DOM> for XML/HTML parsing. Date parsing is done with L<HTTP::Date>.
 
 L<Mojo::Feed> represents the parsed RSS/Atom feed; you can construct it
-by setting an XML string as the C<body>, or by using a L<Mojo::Feed::Reader> object.
+by setting an XML string as the C<body> attribute, by setting the C<file> or C<url>
+attributes to a L<Mojo::File> or L<Mojo::URL> respectively, or by using a
+L<Mojo::Feed::Reader> object.
 
 =head1 ATTRIBUTES
 
@@ -272,8 +281,6 @@ it under the same terms as Perl itself.
 =head1 AUTHOR
 
 Dotan Dimet E<lt>dotan@corky.netE<gt>
-
-Mario Domgoergen
 
 =cut
 

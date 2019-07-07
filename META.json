@@ -67,7 +67,7 @@
          "web" : "https://github.com/dotandimet/Mojo-Feed"
       }
    },
-   "version" : "0.17",
+   "version" : "0.18",
    "x_authority" : "cpan:DOTAN",
    "x_contributors" : [
       "Mario Domgoergen <mdom@taz.de>"
