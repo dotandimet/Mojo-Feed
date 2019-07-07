@@ -25,6 +25,18 @@ get '/feed' => sub {
     shift->redirect_to('atom.xml');
 };
 
+# redirect loop:
+get '/feed/:id' => sub {
+    my ($c) = shift;
+    my $id = $c->stash('id');
+    if ($id > 3) {
+        $c->redirect_to('atom.xml');
+    }
+    else {
+        $c->redirect_to('/feed/' . ($id+1));
+    }
+};
+
 # test the parse_feed helper.
 
 # tests lifted from XML::Feed
@@ -72,6 +84,20 @@ isa_ok( $feed, 'Mojo::Feed', 'got feed on redirect' );
 is( $feed->title, 'First Weblog', 'title ok' );
 is ( $feed->source->path, 'atom.xml' , 'source changed on redirect' );
 } );
+subtest( 'with Max redirect' => sub {
+$feed =
+  Mojo::Feed->new( url => Mojo::URL->new("/feed/1"), max_redirects => 2 );
+my $excp = $@ unless (eval {
+    ($feed->title eq 'First Weblog') ? 1 : 2;
+});
+diag('got excp: ' . $excp);
+like($excp, qr/Number of redirects exceeded when loading feed/, 'Max redirects exception OK');
+$feed =
+  Mojo::Feed->new( url => Mojo::URL->new("/feed/1"), max_redirects => 5 );
+is ($feed->title, 'First Weblog', 'multiple redirects OK');
+is ( $feed->source->path, 'atom.xml' , 'source changed on redirect' );
+} );
+
 ## Callback and non-blocking no longer supported - how do we make a promise API?
 
 ## Then try calling all of the unified API methods.
