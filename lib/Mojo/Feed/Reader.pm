@@ -16,6 +16,8 @@ our @feed_types = (
 );
 our %is_feed = map { $_ => 1 } @feed_types;
 
+has charset => 'UTF-8';
+
 has ua            => sub { Mojo::UserAgent->new };
 
 sub parse {
@@ -29,7 +31,7 @@ sub parse {
         $feed = Mojo::Feed->new( file => $file );
     }
     elsif ( $url = $self->_from_url($xml) ) {
-        $feed = Mojo::Feed->new( url => $url );
+        $feed = Mojo::Feed->new( url => $url, ua => $self->ua );
     }
     else {
         croak "unknown argument $xml";
