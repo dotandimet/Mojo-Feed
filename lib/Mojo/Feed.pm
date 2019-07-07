@@ -3,7 +3,7 @@ use Mojo::Base '-base';
 use Mojo::File;
 use Mojo::URL;
 use Mojo::UserAgent;
-use Mojo::Util 'decode';
+use Mojo::Util qw(decode trim);
 use Carp qw(carp croak);
 use Scalar::Util qw(blessed);
 
@@ -19,11 +19,14 @@ use Mojo::Feed::Item;
 use Mojo::DOM;
 use HTTP::Date;
 
+has charset => 'UTF-8';
+
 has ua => sub { Mojo::UserAgent->new() };
+has max_redirects => sub { $ENV{MOJO_MAX_REDIRECTS} || 3 };
+has redirects => sub { [] };
+
 has url => sub { Mojo::URL->new() };
-
 has file => sub { Mojo::File->new() };
-
 has source => sub {
     my $self = shift;
     return
@@ -44,8 +47,6 @@ has body => sub {
         return '';
     }
 };
-
-has charset => 'UTF-8';
 
 has text => sub {
     my $self = shift;
@@ -87,9 +88,9 @@ foreach my $k (keys %generic) {
     for my $generic (@{$generic{$k}}) {
       if (my $p = $self->dom->at("channel > $generic, feed > $generic")) {
         if ($k eq 'author' && $p->at('name')) {
-          return $p->at('name')->text;
+          return trim $p->at('name')->text;
         }
-        my $text = $p->text || $p->content || $p->attr('href');
+        my $text = trim( $p->text || $p->content || $p->attr('href') );
         if ($k eq 'published') {
           return str2time($text);
         }
@@ -119,7 +120,9 @@ sub _load {
     }
     elsif ( $result->code == 301 || $result->code == 302 ) {
         my $new_url = Mojo::URL->new( $result->headers->location );
+        push @{$self->redirects}, $self->url;
         $self->url($new_url);
+        croak "Number of redirects exceeded when loading feed" if (@{$self->redirects} > $self->max_redirects);
         return $self->_load();
     }
     $self->charset($result->content->charset) if ($result->content->charset);
@@ -183,7 +186,7 @@ The parsed feed as <Mojo::DOM> object.
 
 =head2 source
 
-The source of the feed; either a L<Mojo::Path> or L<Mojo::URL> object, or
+The source of the feed; either a L<Mojo::File> or L<Mojo::URL> object, or
 undef if the feed source was a string.
 
 =head2  title
@@ -213,6 +216,15 @@ Name from C<author>, C<dc:creator> or C<webMaster> field
 =head2  published
 
 Time in epoch seconds (may be filled with pubDate, dc:date, created, issued, updated or modified)
+
+=head2 url
+
+A L<Mojo::URL> object from which to load the file. If set, it will set C<source>. The C<url> attribute
+may change when the feed is loaded if the user agent receives a redirect.
+
+=head2 file
+
+A L<Mojo::File> object from which to read the file. If set, it will set C<source>.
 
 =head1 METHODS
 

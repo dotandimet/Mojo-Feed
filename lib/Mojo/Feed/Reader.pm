@@ -17,27 +17,24 @@ our @feed_types = (
 our %is_feed = map { $_ => 1 } @feed_types;
 
 has ua            => sub { Mojo::UserAgent->new };
-has charset       => 'UTF-8';
-has max_redirects => sub { $ENV{MOJO_MAX_REDIRECTS} || 0 };
 
 sub parse {
     my ( $self, $xml, $charset ) = @_;
     return undef unless ($xml);
-    my ( $body, $source, $url, $file );
-    my %args;
-    $args{'charset'} = $charset if ($charset);
-    $body = $self->_from_string($xml) || undef;
-    if ( !$body && ( $file = $self->_from_file($xml) ) ) {
-        $body = $file->slurp;
+    my ( $body, $source, $url, $file, $feed );
+    if ( $body = $self->_from_string($xml) ) {
+        $feed = Mojo::Feed->new( body => $body );
     }
-    if ( !$body && ( $url = $self->_from_url($xml) ) ) {
-        ( $body, $charset, $url ) = $self->load($url); # url might change by redirect
+    elsif ( $file = $self->_from_file($xml) ) {
+        $feed = Mojo::Feed->new( file => $file );
     }
-    croak "unknown argument $xml" unless ($body);
-    $charset ||= $self->charset;
-    $source = $url || $file;
-    my $feed =
-      Mojo::Feed->new( body => $body, charset => $charset, source => $source );
+    elsif ( $url = $self->_from_url($xml) ) {
+        $feed = Mojo::Feed->new( url => $url );
+    }
+    else {
+        croak "unknown argument $xml";
+    }
+    $feed->charset($charset) if ($charset);
     return ( $feed->is_valid ) ? $feed : undef;
 }
 
@@ -66,20 +63,6 @@ sub _from_file {
       : ( -r "$xml" ) ? Mojo::File->new($xml)
       :                 undef;
     return $file;
-}
-
-sub load {
-    my ( $self, $url ) = @_;
-    my $tx     = $self->ua->get($url);
-    my $result = $tx->result;            # this will croak on network errors
-    if ( $result->is_error ) {
-        croak "Error getting feed from url ", $url, ": ", $result->message;
-    }
-    elsif ( $result->code == 301 || $result->code == 302 ) {
-        my $new_url = Mojo::URL->new( $result->headers->location );
-        return ( $self->load($new_url) );
-    }
-    return ( $result->body, $result->content->charset, $url );
 }
 
 # discover - get RSS/Atom feed URL from argument.
