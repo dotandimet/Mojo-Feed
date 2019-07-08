@@ -271,12 +271,16 @@ Mario Domgoergen
 
 Some tests adapted from L<Feed::Find> and L<XML:Feed>, Feed auto-discovery adapted from L<Feed::Find>.
 
-=head1 LICENSE
+=head1 COPYRIGHT AND LICENSE
 
-Copyright (C) Dotan Dimet.
+This software is Copyright (c) 2018-2019 by Dotan Dimet E<lt>dotan@corky.netE<gt>.
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Artistic License version 2.0.
+
+Test data (web pages, feeds and excerpts) included in this package is intended
+for testing purposes only, and is not meant in any way to infringe on the
+rights of the respective authors.
 
 =head1 AUTHOR
 
