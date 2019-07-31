@@ -1,12 +1,15 @@
 package Mojo::Feed;
 use Mojo::Base '-base';
+use Mojo::DOM;
 use Mojo::File;
 use Mojo::URL;
 use Mojo::UserAgent;
 use Mojo::Util qw(decode trim);
-use Carp qw(carp croak);
-use Scalar::Util qw(blessed);
 
+use Carp qw(croak);
+use HTTP::Date qw(str2time);
+
+use Mojo::Feed::Item;
 
 use overload
   bool     => sub { shift->is_valid },
@@ -14,10 +17,6 @@ use overload
   fallback => 1;
 
 our $VERSION = "0.18";
-
-use Mojo::Feed::Item;
-use Mojo::DOM;
-use HTTP::Date;
 
 has charset => 'UTF-8';
 
