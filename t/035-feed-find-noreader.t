@@ -35,6 +35,21 @@ get '/wp' => sub {
     );
 };
 
+get '/' => sub {
+    my $self = shift;
+    if ($self->param('feed') eq 'rss2') {
+        $self->redirect_to('rss20.xml');
+    }
+    elsif ($self->param('feed') eq 'rss') {
+        $self->redirect_to('rss10.xml');
+    }
+    elsif ($self->param('feed') eq 'atom') {
+        $self->redirect_to('atom.xml');
+    }
+    else {
+        $self->reply->not_found();
+    }
+};
 
 my $t            = Test::Mojo->new(app);
 
@@ -70,15 +85,14 @@ is($feed->title, 'First Weblog', 'load ok'); # load it
 is( $feed->url, $abs_feed_url, 'link) ok' );    # abs url!
 
 # html page with multiple feed links
-$t->get_ok('/link2_multi.html')->status_is(200);
-$feed = Mojo::Feed->new(ua => $t->ua, url => '/link2_multi.html');
+$t->get_ok('/link2_multi_rel.html')->status_is(200);
+$feed = Mojo::Feed->new(ua => $t->ua, url => '/link2_multi_rel.html');
 is($feed->title, 'First Weblog', 'load ok'); # load it
-is( $feed->url, $abs_feed_url, 'link multi ok' );    # abs url!
-my @feeds = $feed->related;
-is( scalar @feeds, 3, 'got 3 possible feed links' );
-is( $feeds[0], 'http://www.example.com/?feed=rss2' );    # abs url!
-is( $feeds[1], 'http://www.example.com/?feed=rss' );     # abs url!
-is( $feeds[2], 'http://www.example.com/?feed=atom' );    # abs url!
+is( $feed->url, abs_url('/rss20.xml'), 'link multi ok' );    # abs url!
+my @feeds = @{$feed->related};
+is( scalar @feeds, 2, 'got 2 additional feed links' );
+is( $feeds[0], abs_url('/')->query(feed=>'rss') );     # abs url!
+is( $feeds[1], abs_url('/')->query(feed=>'atom') );    # abs url!
 
 done_testing();
 __END__
