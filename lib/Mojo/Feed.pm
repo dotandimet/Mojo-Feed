@@ -7,6 +7,7 @@ use Mojo::UserAgent;
 use Mojo::Util qw(decode trim);
 
 use Carp qw(croak);
+use List::Util;
 use HTTP::Date qw(str2time);
 
 use Mojo::Feed::Item;
@@ -112,18 +113,16 @@ sub is_valid {
 }
 
 sub is_feed_content_type {
-  my ($self, $content_type_h) = @_;
-  # use split to remove charset attribute from content_type
-  my ($content_type) = split(/[; ]+/, $content_type_h);
-
+  my ($self, $content_type) = @_;
+  # use split to remove charset attribute from content_type header
+  ($content_type) = split(/[; ]+/, $content_type);
 # feed mime-types:
-  our @feed_types = (
+  my @feed_types = (
     'application/x.atom+xml', 'application/atom+xml',
     'application/xml',        'text/xml',
     'application/rss+xml',    'application/rdf+xml'
   );
-  our %is_feed = map { $_ => 1 } @feed_types;
-  return defined $is_feed{$content_type};
+  return List::Util::first { $_ eq $content_type } @feed_types;
 }
 
 
@@ -131,6 +130,7 @@ sub _load {
   my ($self) = @_;
   my $tx     = $self->ua->get($self->url);
   my $result = $tx->result;                  # this will croak on network errors
+
   if ($result->is_error) {
     croak "Error getting feed from url ", $self->url, ": ", $result->message;
   }
@@ -152,6 +152,12 @@ sub _load {
   }
   else {
     # we are in a web page. PHEAR.
+
+    # Set real (absolute) URL (is this only relevant for testing?):
+    if ($self->url ne $tx->req->url) {
+      push @{$self->redirects}, $self->url;  # for logging?
+      $self->url($tx->req->url);
+    }
     my @feeds;
 
     # Find feed link elements in HEAD:
@@ -165,8 +171,8 @@ sub _load {
       my $attrs = $_->attr();
       return unless ($attrs->{'rel'});
       my %rel = map { $_ => 1 } split /\s+/, lc($attrs->{'rel'});
-      my $type = ($attrs->{'type'}) ? lc trim $attrs->{'type'} : '';
-      if ($self->is_feed_content_type($type)
+      my $type = ($attrs->{'type'}) ? lc trim $attrs->{'type'} : undef;
+      if ($type && $self->is_feed_content_type($type)
         && ($rel{'alternate'} || $rel{'service.feed'}))
       {
         push @feeds, Mojo::URL->new($attrs->{'href'})->to_abs($base);
