@@ -20,33 +20,34 @@ our $VERSION = "0.18";
 
 has charset => 'UTF-8';
 
-has ua => sub { Mojo::UserAgent->new() };
+has ua            => sub { Mojo::UserAgent->new() };
 has max_redirects => sub { $ENV{MOJO_MAX_REDIRECTS} || 3 };
-has redirects => sub { [] };
+has redirects     => sub { [] };
+has related       => sub { [] };
 
-has url => sub { Mojo::URL->new() };
+has url  => sub { Mojo::URL->new() };
 has file => sub { Mojo::File->new() };
 has source => sub {
-    my $self = shift;
-    return
-        ( $self->url ne '' ) ? $self->url
-      : ( -f $self->file )   ? $self->file
-      :                        undef;
+  my $self = shift;
+  return
+      ($self->url ne '') ? $self->url
+    : (-f $self->file)   ? $self->file
+    :                      undef;
 };
 
 has body => sub {
-    my $self = shift;
-    if ($self->url ne '') {
-        return $self->_load();
-    }
-    else { # skip file tests, just slurp (for Mojo::Asset::File)
-        return $self->file->slurp();
-    }
+  my $self = shift;
+  if ($self->url ne '') {
+    return $self->_load();
+  }
+  else {    # skip file tests, just slurp (for Mojo::Asset::File)
+    return $self->file->slurp();
+  }
 };
 
 has text => sub {
-    my $self = shift;
-    return decode($self->charset, $self->body) || '';
+  my $self = shift;
+  return decode($self->charset, $self->body) || '';
 };
 
 has dom => sub {
@@ -58,12 +59,15 @@ has feed_type => sub {
   my $top     = shift->dom->children->first;
   my $tag     = $top->tag;
   my $version = $top->attr('version');
-  my $ns = $top->attr('namespace');
+  my $ns      = $top->attr('namespace');
   return
-      ($tag =~ /feed/i) ? ($version) ? 'Atom ' . $version : 'Atom 1.0'
-    : ($tag =~ /rss/i)  ? 'RSS ' . $version
-    : ($tag =~ /rdf/i)  ? 'RSS 1.0'
-    :                     'unknown';
+      ($tag =~ /feed/i)
+    ? ($version)
+      ? 'Atom ' . $version
+      : 'Atom 1.0'
+    : ($tag =~ /rss/i) ? 'RSS ' . $version
+    : ($tag =~ /rdf/i) ? 'RSS 1.0'
+    :                    'unknown';
 };
 
 my %generic = (
@@ -86,7 +90,7 @@ foreach my $k (keys %generic) {
         if ($k eq 'author' && $p->at('name')) {
           return trim $p->at('name')->text;
         }
-        my $text = trim( $p->text || $p->content || $p->attr('href') || '');
+        my $text = trim($p->text || $p->content || $p->attr('href') || '');
         if ($k eq 'published') {
           return str2time($text);
         }
@@ -107,22 +111,100 @@ sub is_valid {
   shift->dom->children->first->tag =~ /^(feed|rss|rdf|rdf:rdf)$/i;
 }
 
+sub is_feed_content_type {
+  my ($self, $content_type_h) = @_;
+  # use split to remove charset attribute from content_type
+  my ($content_type) = split(/[; ]+/, $content_type_h);
+
+# feed mime-types:
+  our @feed_types = (
+    'application/x.atom+xml', 'application/atom+xml',
+    'application/xml',        'text/xml',
+    'application/rss+xml',    'application/rdf+xml'
+  );
+  our %is_feed = map { $_ => 1 } @feed_types;
+  return defined $is_feed{$content_type};
+}
+
+
 sub _load {
-    my ( $self ) = @_;
-    my $tx     = $self->ua->get($self->url);
-    my $result = $tx->result;            # this will croak on network errors
-    if ( $result->is_error ) {
-        croak "Error getting feed from url ", $self->url, ": ", $result->message;
-    }
-    elsif ( $result->code == 301 || $result->code == 302 ) {
-        my $new_url = Mojo::URL->new( $result->headers->location );
-        push @{$self->redirects}, $self->url;
-        $self->url($new_url);
-        croak "Number of redirects exceeded when loading feed" if (@{$self->redirects} > $self->max_redirects);
-        return $self->_load();
-    }
+  my ($self) = @_;
+  my $tx     = $self->ua->get($self->url);
+  my $result = $tx->result;                  # this will croak on network errors
+  if ($result->is_error) {
+    croak "Error getting feed from url ", $self->url, ": ", $result->message;
+  }
+
+  # Redirect:
+  elsif ($result->code == 301 || $result->code == 302) {
+    my $new_url = Mojo::URL->new($result->headers->location);
+    push @{$self->redirects}, $self->url;
+    $self->url($new_url);
+    croak "Number of redirects exceeded when loading feed"
+      if (@{$self->redirects} > $self->max_redirects);
+    return $self->_load();
+  }
+
+  # Is this a feed (by content type)?
+  if ($self->is_feed_content_type($result->headers->content_type)) {
     $self->charset($result->content->charset) if ($result->content->charset);
     return $result->body;
+  }
+  else {
+    # we are in a web page. PHEAR.
+    my @feeds;
+
+    # Find feed link elements in HEAD:
+    my $base
+      = Mojo::URL->new(
+      $result->dom->find('head base')->map('attr', 'href')->join('') || $self->url)
+      ->to_abs($self->url);
+    my $title
+      = $result->dom->find('head > title')->map('text')->join('') || $self->url;
+    $result->dom->find('head link')->each(sub {
+      my $attrs = $_->attr();
+      return unless ($attrs->{'rel'});
+      my %rel = map { $_ => 1 } split /\s+/, lc($attrs->{'rel'});
+      my $type = ($attrs->{'type'}) ? lc trim $attrs->{'type'} : '';
+      if ($self->is_feed_content_type($type)
+        && ($rel{'alternate'} || $rel{'service.feed'}))
+      {
+        push @feeds, Mojo::URL->new($attrs->{'href'})->to_abs($base);
+      }
+    });
+
+    # Find feed links (<A HREF="...something feed-like">)
+    state $feed_exp = qr/((\.(?:rss|xml|rdf)$)|(\/feed\/)|(feeds*\.))/;
+    $result->dom->find('a')->grep(sub {
+      $_->attr('href') && $_->attr('href') =~ /$feed_exp/io;
+    })->each(sub {
+      push @feeds, Mojo::URL->new($_->attr('href'))->to_abs($base);
+    });
+    if (@feeds) {
+      push @{$self->redirects}, $self->url; # not really a redirect, but save it
+      $self->url(shift @feeds);
+
+      # save any remaining feed links as related
+      push @{$self->related}, @feeds if (@feeds);
+      return $self->_load();
+    }
+   else {
+        # call me crazy, but maybe this is just a feed served as HTML?
+        my $test = Mojo::Feed->new( url => $self->url, body => $result->body );
+        $test->charset($result->content->charset) if ($result->content->charset);
+        if ($test->is_valid) {
+          # can't avoid parsing twice;
+          # body is probably being called in the dom initializer
+          # :(
+          # $self->dom($test->dom);
+          $self->charset($test->charset) if ($test->charset);
+          return $test->body;
+        }
+        else {
+          croak "No valid feed found at ", $self->url;
+        }
+   }
+  }
 }
 
 

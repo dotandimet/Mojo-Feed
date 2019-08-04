@@ -8,14 +8,6 @@ use Mojo::Util 'decode', 'trim';
 use Carp qw(carp croak);
 use Scalar::Util qw(blessed);
 
-# feed mime-types:
-our @feed_types = (
-    'application/x.atom+xml', 'application/atom+xml',
-    'application/xml',        'text/xml',
-    'application/rss+xml',    'application/rdf+xml'
-);
-our %is_feed = map { $_ => 1 } @feed_types;
-
 has charset => 'UTF-8';
 
 has ua            => sub { Mojo::UserAgent->new };
@@ -93,9 +85,7 @@ sub _find_feed_links {
     state $feed_exp = qr/((\.(?:rss|xml|rdf)$)|(\/feed\/)|(feeds*\.))/;
     my @feeds;
 
-    # use split to remove charset attribute from content_type
-    my ($content_type) = split( /[; ]+/, $res->headers->content_type );
-    if ( $is_feed{$content_type} ) {
+    if ( Mojo::Feed->is_feed_content_type($res->headers->content_type) ) {
         push @feeds, Mojo::URL->new($url)->to_abs;
     }
     else {
@@ -111,7 +101,7 @@ sub _find_feed_links {
                 return unless ( $attrs->{'rel'} );
                 my %rel = map { $_ => 1 } split /\s+/, lc( $attrs->{'rel'} );
                 my $type = ( $attrs->{'type'} ) ? lc trim $attrs->{'type'} : '';
-                if ( $is_feed{$type}
+                if ( $type && Mojo::Feed->is_feed_content_type($type)
                     && ( $rel{'alternate'} || $rel{'service.feed'} ) )
                 {
                     push @feeds,
