@@ -30,7 +30,7 @@ get '/monks' => sub {
 };
 get '/wp' => sub {
     shift->render(
-        data => '<html><a href="http://feed.dummy.com">subscribe</a> for updates</html>',
+        data => '<html><a href="/feed">subscribe</a> for updates</html>',
         format => 'html'
     );
 };
@@ -49,6 +49,14 @@ get '/' => sub {
     else {
         $self->reply->not_found();
     }
+};
+
+get '/feed' => sub {
+    shift->render(
+        data =>
+           path( $samples, 'atom.xml' )->slurp,
+        format => 'html'
+    );
 };
 
 my $t            = Test::Mojo->new(app);
@@ -94,45 +102,51 @@ is( scalar @feeds, 2, 'got 2 additional feed links' );
 is( $feeds[0], abs_url('/')->query(feed=>'rss') );     # abs url!
 is( $feeds[1], abs_url('/')->query(feed=>'atom') );    # abs url!
 
-done_testing();
-__END__
 
 # feed is in link:
 # also, use base tag in head - for pretty url
-$t->get_ok('/link3_anchor.html')->status_is(200);
-$feedr->discover('/link3_anchor.html')->then(sub{ (@feeds) = @_ })->wait;
-is( $feeds[0], 'http://example.com/foo.rss' );
-is( $feeds[1], 'http://example.com/foo.xml' );
-
-@feeds = ();
-$feedr->discover( '/link2_multi.html' )->then(sub{ (@feeds) = @_ })->wait;
-is( scalar @feeds, 3 );
-is( $feeds[0],     'http://www.example.com/?feed=rss2' );    # abs url!
-is( $feeds[1],     'http://www.example.com/?feed=rss' );     # abs url!
-is( $feeds[2],     'http://www.example.com/?feed=atom' );    # abs url!
+$t->get_ok('/link3_anchor_no_base.html')->status_is(200);
+$feed = Mojo::Feed->new(ua => $t->ua, url => '/link3_anchor_no_base.html');
+is($feed->title, 'First Weblog', 'load ok'); # load it
+is( $feed->url, abs_url('/rss20.xml'), 'link multi ok' );    # abs url!
+@feeds = @{$feed->related};
+is( scalar @feeds, 1, 'got 1 additional feed link' );
+is( $feeds[0], abs_url('/atom.xml'));
 
 # Let's try something with redirects:
 $t->get_ok('/floo')->status_is(302);
-$feedr->discover('/floo')->then(sub{ (@feeds) = @_ })->wait;
-is( $feeds[0], undef, 'default UA does not follow redirects' )
-  ;    # default UA doesn't follow redirects!
-$feedr->ua->max_redirects(3);
-$feedr->discover('/floo')->then(sub{ (@feeds) = @_ })->wait;
-is( $feeds[0], $abs_feed_url, 'found with redirect' );    # abs url!
+$feed = Mojo::Feed->new(url => '/floo', ua => $t->ua, max_redirects => 0);
+eval { $feed->title };
+like( $@, qr/Number of redirects exceeded when loading feed/);
+ok( ! $feed->is_valid, 'feed is invalid' );
+
+$feed = Mojo::Feed->new(url => '/floo', ua => $t->ua);
+is($feed->title, 'First Weblog', 'load ok'); # load it
+
+is( $feed->url, abs_url('atom.xml'), 'found with redirect' );    # abs url!
 
 # what do we do on a page with no feeds?
 $t->get_ok('/no_link.html')->status_is(200);
-$feedr->discover('/no_link.html')->then(sub{ (@feeds) = @_ })->wait;
-is( scalar @feeds, 0, 'no feeds' );
-say "feed: $_" for (@feeds);
+$feed = Mojo::Feed->new(ua => $t->ua, url => '/no_link.html');
+eval { $feed->title };
+like( $@, qr/No valid feed found at /);
+ok (!$feed, 'no feed (invalid)');
 
 # a feed with an incorrect mime-type:
 $t->get_ok('/olaf')->status_is(200)
   ->content_type_like( qr/^text\/html/, 'feed served as html' );
-$feedr->discover('/olaf')->then(sub{ (@feeds) = @_ })->wait;
-is( scalar @feeds, 1 );
-is( Mojo::URL->new( $feeds[0] )->path, '/olaf', 'feed served as html' );
+$feed = Mojo::Feed->new(ua => $t->ua, url => '/olaf');
+is($feed->title, 'First Weblog', 'load ok'); # load it
+is($feed->url, abs_url('/olaf'), 'feed served as html' );
 
+# why just an extension? look for the word "feed" somewhere in the url
+$feed = Mojo::Feed->new(ua => $t->ua, url => '/wp');
+is($feed->title, 'First Weblog', 'load ok'); # load it
+is($feed->url, abs_url('/feed'), 'promising url title in link');
+
+
+done_testing();
+__END__
 
 @feeds = ();
 
@@ -145,19 +159,5 @@ is( scalar @feeds, 0, 'no feeds for perlmonks' );
 @feeds = ();
 $feedr->discover( '/monks')->then(sub{ (@feeds) = @_ })->wait;
 is( scalar @feeds, 0, 'no feeds for perlmonks (nb)' );
-
-# why just an extension? look for the word "feed" somewhere in the url
-@feeds=();
-$feedr->discover('/wp')->then(sub { @feeds = @_ })->wait;
-is($feeds[0], 'http://feed.dummy.com', 'promising url title');
-
-# @feeds = ();
-# $delay = Mojo::IOLoop->delay(sub { shift; (@feeds) = @_; });
-# $t->app->find_feeds('slashdot.org', $delay->begin(0));
-# $delay->wait();
-# is(scalar @feeds, 1, 'feed for slashdot');
-# @feeds = ();
-# @feeds = $t->app->find_feeds('slashdot.org');
-# is(scalar @feeds, 1, 'feed for slashdot');
 
 done_testing();
