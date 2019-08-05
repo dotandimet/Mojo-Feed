@@ -108,9 +108,9 @@ has items => sub {
     ->map(sub { Mojo::Feed::Item->new(dom => $_, feed => $self) });
 };
 
-sub is_valid {
+has is_valid => sub {
   shift->dom->children->first->tag =~ /^(feed|rss|rdf|rdf:rdf)$/i;
-}
+};
 
 sub is_feed_content_type {
   my ($self, $content_type) = @_;
@@ -132,6 +132,7 @@ sub _load {
   my $result = $tx->result;                  # this will croak on network errors
 
   if ($result->is_error) {
+    $self->is_valid(undef);
     croak "Error getting feed from url ", $self->url, ": ", $result->message;
   }
 
@@ -140,8 +141,10 @@ sub _load {
     my $new_url = Mojo::URL->new($result->headers->location);
     push @{$self->redirects}, $self->url;
     $self->url($new_url);
-    croak "Number of redirects exceeded when loading feed"
-      if (@{$self->redirects} > $self->max_redirects);
+    if (@{$self->redirects} > $self->max_redirects) {
+      $self->is_valid(undef);
+      croak "Number of redirects exceeded when loading feed"
+    }
     return $self->_load();
   }
 
@@ -180,7 +183,7 @@ sub _load {
     });
 
     # Find feed links (<A HREF="...something feed-like">)
-    state $feed_exp = qr/((\.(?:rss|xml|rdf)$)|(\/feed\/)|(feeds*\.))/;
+    state $feed_exp = qr/((\.(?:rss|xml|rdf)$)|(\/feed\/*$)|(feeds*\.))/;
     $result->dom->find('a')->grep(sub {
       $_->attr('href') && $_->attr('href') =~ /$feed_exp/io;
     })->each(sub {
@@ -207,6 +210,7 @@ sub _load {
           return $test->body;
         }
         else {
+          $self->is_valid(undef);
           croak "No valid feed found at ", $self->url;
         }
    }
