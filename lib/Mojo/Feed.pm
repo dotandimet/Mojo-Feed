@@ -379,7 +379,7 @@ Some tests adapted from L<Feed::Find> and L<XML:Feed>, Feed auto-discovery adapt
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is Copyright (c) 2018-2019 by Dotan Dimet E<lt>dotan@corky.netE<gt>.
+This software is Copyright (c) Dotan Dimet E<lt>dotan@corky.netE<gt>.
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Artistic License version 2.0.
