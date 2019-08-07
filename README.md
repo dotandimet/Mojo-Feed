@@ -86,6 +86,14 @@ may change when the feed is loaded if the user agent receives a redirect.
 
 A [Mojo::File](https://metacpan.org/pod/Mojo::File) object from which to read the file. If set, it will set `source`.
 
+## is\_valid
+
+True if the top-level element of the DOM is a valid RSS (0.9x, 1.0, 2.0) or Atom tag. Otherwise, false.
+
+## feed\_type
+
+Detect type of feed - returns one of "RSS 1.0", "RSS 2.0", "Atom 0.3", "Atom 1.0" or "unknown"
+
 # METHODS
 
 [Mojo::Feed](https://metacpan.org/pod/Mojo::Feed) inherits all methods from
@@ -109,13 +117,14 @@ Return a hash reference representing the feed.
 
 Return a XML serialized text of the feed's Mojo::DOM node. Note that this can be different from the original XML text in the feed.
 
-## is\_valid
+## is\_feed\_content\_type
 
-Returns true if the top-level element of the DOM is a valid RSS (0.9x, 1.0, 2.0) or Atom tag. Otherwise, returns false.
+Accepts a mime type string as an argument; returns true if it is one
+of the accepted mime-types for RSS/Atom feeds, undef otherwise.
 
-## feed\_type
+## find\_feed\_links
 
-Detect type of feed - returns one of "RSS 1.0", "RSS 2.0", "Atom 0.3", "Atom 1.0" or "unknown"
+Accepts a Mojo::Message::Response returned from an HTML page, uses its dom() method to find either LINK elements in the HEAD or links (A elements) that link to a possible RSS/Atom feed.
 
 # CREDITS
 
@@ -125,12 +134,16 @@ Mario Domgoergen
 
 Some tests adapted from [Feed::Find](https://metacpan.org/pod/Feed::Find) and [XML:Feed](XML:Feed), Feed auto-discovery adapted from [Feed::Find](https://metacpan.org/pod/Feed::Find).
 
-# LICENSE
+# COPYRIGHT AND LICENSE
 
-Copyright (C) Dotan Dimet.
+This software is Copyright (c) Dotan Dimet <dotan@corky.net>.
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Artistic License version 2.0.
+
+Test data (web pages, feeds and excerpts) included in this package is intended
+for testing purposes only, and is not meant in any way to infringe on the
+rights of the respective authors.
 
 # AUTHOR
 
