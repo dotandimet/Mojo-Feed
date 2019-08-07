@@ -72,62 +72,17 @@ sub discover {
         sub {
             my ($tx) = @_;
             if ( $tx->res->is_success && $tx->res->code == 200 ) {
-                return $self->_find_feed_links( $tx->req->url, $tx->res );
+                my $feed = Mojo::Feed->new(url => $tx->req->url);
+                return $feed->url if ($feed->is_feed_content_type($tx->res->headers->content_type));
+                my @feeds = $feed->find_feed_links($tx->res);
+                return @feeds if (@feeds);
+                $feed->body($tx->res->body);
+                $feed->charset($tx->res->content->charset) if ($tx->res->content->charset);
+                return $feed->url if ($feed->is_valid);
             }
             return;
         }
       );
-}
-
-sub _find_feed_links {
-    my ( $self, $url, $res ) = @_;
-
-    state $feed_exp = qr/((\.(?:rss|xml|rdf)$)|(\/feed\/)|(feeds*\.))/;
-    my @feeds;
-
-    if ( Mojo::Feed->is_feed_content_type($res->headers->content_type) ) {
-        push @feeds, Mojo::URL->new($url)->to_abs;
-    }
-    else {
-        # we are in a web page. PHEAR.
-        my $base = Mojo::URL->new(
-                 $res->dom->find('head base')->map( 'attr', 'href' )->join('')
-              || $url )->to_abs($url);
-        my $title =
-          $res->dom->find('head > title')->map('text')->join('') || $url;
-        $res->dom->find('head link')->each(
-            sub {
-                my $attrs = $_->attr();
-                return unless ( $attrs->{'rel'} );
-                my %rel = map { $_ => 1 } split /\s+/, lc( $attrs->{'rel'} );
-                my $type = ( $attrs->{'type'} ) ? lc trim $attrs->{'type'} : '';
-                if ( $type && Mojo::Feed->is_feed_content_type($type)
-                    && ( $rel{'alternate'} || $rel{'service.feed'} ) )
-                {
-                    push @feeds,
-                      Mojo::URL->new( $attrs->{'href'} )->to_abs($base);
-                }
-            }
-        );
-        $res->dom->find('a')->grep(
-            sub {
-                $_->attr('href')
-                  && $_->attr('href') =~ /$feed_exp/io;
-            }
-        )->each(
-            sub {
-                push @feeds, Mojo::URL->new( $_->attr('href') )->to_abs($base);
-            }
-        );
-
-        # call me crazy, but maybe this is just a feed served as HTML?
-        unless (@feeds) {
-            if ( $self->parse( $res->body, $res->content->charset ) ) {
-                push @feeds, Mojo::URL->new($url)->to_abs;
-            }
-        }
-    }
-    return @feeds;
 }
 
 sub parse_opml {

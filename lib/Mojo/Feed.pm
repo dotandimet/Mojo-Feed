@@ -161,34 +161,8 @@ sub _load {
       push @{$self->redirects}, $self->url;  # for logging?
       $self->url($tx->req->url);
     }
-    my @feeds;
+    my @feeds = $self->find_feed_links($result);
 
-    # Find feed link elements in HEAD:
-    my $base
-      = Mojo::URL->new(
-      $result->dom->find('head base')->map('attr', 'href')->join('') || $self->url)
-      ->to_abs($self->url);
-    my $title
-      = $result->dom->find('head > title')->map('text')->join('') || $self->url;
-    $result->dom->find('head link')->each(sub {
-      my $attrs = $_->attr();
-      return unless ($attrs->{'rel'});
-      my %rel = map { $_ => 1 } split /\s+/, lc($attrs->{'rel'});
-      my $type = ($attrs->{'type'}) ? lc trim $attrs->{'type'} : undef;
-      if ($type && $self->is_feed_content_type($type)
-        && ($rel{'alternate'} || $rel{'service.feed'}))
-      {
-        push @feeds, Mojo::URL->new($attrs->{'href'})->to_abs($base);
-      }
-    });
-
-    # Find feed links (<A HREF="...something feed-like">)
-    state $feed_exp = qr/((\.(?:rss|xml|rdf)$)|(\/feed\/*$)|(feeds*\.))/;
-    $result->dom->find('a')->grep(sub {
-      $_->attr('href') && $_->attr('href') =~ /$feed_exp/io;
-    })->each(sub {
-      push @feeds, Mojo::URL->new($_->attr('href'))->to_abs($base);
-    });
     if (@feeds) {
       push @{$self->redirects}, $self->url; # not really a redirect, but save it
       $self->url(shift @feeds);
@@ -217,6 +191,38 @@ sub _load {
   }
 }
 
+sub find_feed_links {
+  my ($self, $result) = @_;
+  my @feeds;
+
+  # Find feed link elements in HEAD:
+  my $base
+    = Mojo::URL->new(
+    $result->dom->find('head base')->map('attr', 'href')->join('') || $self->url)
+    ->to_abs($self->url);
+  my $title
+    = $result->dom->find('head > title')->map('text')->join('') || $self->url;
+  $result->dom->find('head link')->each(sub {
+    my $attrs = $_->attr();
+    return unless ($attrs->{'rel'});
+    my %rel = map { $_ => 1 } split /\s+/, lc($attrs->{'rel'});
+    my $type = ($attrs->{'type'}) ? lc trim $attrs->{'type'} : undef;
+    if ($type && $self->is_feed_content_type($type)
+      && ($rel{'alternate'} || $rel{'service.feed'}))
+    {
+      push @feeds, Mojo::URL->new($attrs->{'href'})->to_abs($base);
+    }
+  });
+
+  # Find feed links (<A HREF="...something feed-like">)
+  state $feed_exp = qr/((\.(?:rss|xml|rdf)$)|(\/feed\/*$)|(feeds*\.))/;
+  $result->dom->find('a')->grep(sub {
+    $_->attr('href') && $_->attr('href') =~ /$feed_exp/io;
+  })->each(sub {
+    push @feeds, Mojo::URL->new($_->attr('href'))->to_abs($base);
+  });
+  return @feeds;
+}
 
 sub to_hash {
   my $self = shift;
@@ -323,6 +329,14 @@ may change when the feed is loaded if the user agent receives a redirect.
 
 A L<Mojo::File> object from which to read the file. If set, it will set C<source>.
 
+=head2 is_valid
+
+True if the top-level element of the DOM is a valid RSS (0.9x, 1.0, 2.0) or Atom tag. Otherwise, false.
+
+=head2 feed_type
+
+Detect type of feed - returns one of "RSS 1.0", "RSS 2.0", "Atom 0.3", "Atom 1.0" or "unknown"
+
 =head1 METHODS
 
 L<Mojo::Feed> inherits all methods from
@@ -346,13 +360,14 @@ Return a hash reference representing the feed.
 
 Return a XML serialized text of the feed's Mojo::DOM node. Note that this can be different from the original XML text in the feed.
 
-=head2 is_valid
+=head2 is_feed_content_type
 
-Returns true if the top-level element of the DOM is a valid RSS (0.9x, 1.0, 2.0) or Atom tag. Otherwise, returns false.
+Accepts a mime type string as an argument; returns true if it is one
+of the accepted mime-types for RSS/Atom feeds, undef otherwise.
 
-=head2 feed_type
+=head2 find_feed_links
 
-Detect type of feed - returns one of "RSS 1.0", "RSS 2.0", "Atom 0.3", "Atom 1.0" or "unknown"
+Accepts a Mojo::Message::Response returned from an HTML page, uses its dom() method to find either LINK elements in the HEAD or links (A elements) that link to a possible RSS/Atom feed.
 
 =head1 CREDITS
 
