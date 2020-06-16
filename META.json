@@ -4,7 +4,7 @@
       "Dotan Dimet <dotan@corky.net>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Minilla/v3.1.5, CPAN::Meta::Converter version 2.150010",
+   "generated_by" : "Minilla/v3.1.10, CPAN::Meta::Converter version 2.150010",
    "license" : [
       "artistic_2"
    ],
@@ -67,7 +67,7 @@
          "web" : "https://github.com/dotandimet/Mojo-Feed"
       }
    },
-   "version" : "0.18",
+   "version" : "0.19",
    "x_authority" : "cpan:DOTAN",
    "x_contributors" : [
       "Mario Domgoergen <mdom@taz.de>"
