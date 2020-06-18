@@ -108,6 +108,9 @@ has items => sub {
     ->map(sub { Mojo::Feed::Item->new(dom => $_, feed => $self) });
 };
 
+# alias
+has entries => sub { shift->items() };
+
 has is_valid => sub {
   shift->dom->children->first->tag =~ /^(feed|rss|rdf|rdf:rdf)$/i;
 };
@@ -307,6 +310,10 @@ Web page URL associated with the feed
 =head2  items
 
 L<Mojo::Collection> of L<Mojo::Feed::Item> objects representing feed news items
+
+=head2  entries
+
+Alias name for C<items>.
 
 =head2  subtitle
 
