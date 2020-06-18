@@ -109,7 +109,7 @@ has items => sub {
 };
 
 # alias
-has entries => sub { shift->items() };
+sub entries { shift->items() };
 
 has is_valid => sub {
   shift->dom->children->first->tag =~ /^(feed|rss|rdf|rdf:rdf)$/i;
