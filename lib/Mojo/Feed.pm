@@ -288,7 +288,7 @@ The original decoded string of the feed.
 
 =head2 dom
 
-The parsed feed as <Mojo::DOM> object.
+The parsed feed as L<Mojo::DOM> object.
 
 =head2 source
 
