@@ -70,7 +70,8 @@
    "version" : "0.19",
    "x_authority" : "cpan:DOTAN",
    "x_contributors" : [
-      "Mario Domgoergen <mdom@taz.de>"
+      "Mario Domgoergen <mdom@taz.de>",
+      "mohawk2 <mohawk2@users.noreply.github.com>"
    ],
    "x_serialization_backend" : "JSON::PP version 4.02",
    "x_static_install" : 1
