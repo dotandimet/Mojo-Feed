@@ -1,5 +1,7 @@
 package Mojo::Feed::Atom;
-use Mojo::Base -base;
+use Mojo::Base 'Mojo::Feed';
+
+use Mojo::Feed::Item::Atom;
 
 my %atom = (
   title => ['title'],

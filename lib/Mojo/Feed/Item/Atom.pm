@@ -1,119 +1,5 @@
-package Mojo::Feed::Item;
-use Mojo::Base '-base';
-
-use overload
-  bool     => sub {1},
-  '""'     => sub { shift->to_string },
-  fallback => 1;
-
-use Mojo::Feed::Item::Enclosure;
-use HTTP::Date 'str2time';
-
-has [qw(title link content id description guid published author)];
-
-has tags => sub {
-  shift->dom->find('category, dc\:subject')
-    ->map(sub { $_[0]->text || $_[0]->attr('term') });
-};
-
-has 'dom';
-has feed => undef, weak => 1;
-
-has summary => sub { shift->description };
-
-my %selector = (
-  content => ['content', 'content\:encoded', 'xhtml\:body', 'description'],
-  description => ['description', 'summary'],
-  published   => [
-    'published', 'pubDate', 'dc\:date', 'created',
-    'issued',    'updated', 'modified'
-  ],
-  author => ['author', 'dc\:creator'],
-  id     => ['id',     'guid', 'link'],
-  title => ['title'],
-  link  => ['link'],
-  guid  => ['guid'],
-);
-
-sub _at {
-  my ($self, $selector) = @_;
-  return $self->dom->find($selector)->first(sub {
-    my $tag = $_->tag;
-    $tag =~ s/:/\\:/;
-    return $tag eq $selector;
-  });
-}
-
-foreach my $k (keys %selector) {
-  has $k => sub {
-    my $self = shift;
-    for my $selector (@{$selector{$k}}) {
-      if (my $p = $self->_at($selector)) {
-        if ($k eq 'author' && $p->at('name')) {
-          return $p->at('name')->text;
-        }
-        my $text = $p->text || $p->content;
-        if ($k eq 'published') {
-          return str2time($text);
-        }
-        return $text;
-      }
-    }
-    return;
-  };
-}
-
-has enclosures => sub {
-  my $self = shift;
-  my @enclosures;
-  $self->dom->find('enclosure')->each(sub {
-    push @enclosures, $_;
-  });
-  $self->dom->find('link')->each(sub {
-    my $l = shift;
-    if ($l->attr('href') && $l->attr('rel') && $l->attr('rel') eq 'enclosure') {
-      push @enclosures, $l;
-    }
-  });
-  return Mojo::Collection->new(
-    map { Mojo::Feed::Item::Enclosure->new(dom => $_) } @enclosures);
-};
-
-has link => sub {
-
-  # let's handle links seperately, because ATOM loves these buggers:
-  my $link;
-  shift->dom->find('link')->each(sub {
-    my $l = shift;
-    if ($l->attr('href')
-      && (!$l->attr('rel') || $l->attr('rel') eq 'alternate'))
-    {
-      $link = $l->attr('href');
-    }
-    else {
-      if ($l->text =~ /\w+/) {
-        $link = $l->text;    # simple link
-      }
-    }
-  });
-  return $link;
-};
-
-sub to_string {
-  shift->dom->to_string;
-}
-
-sub to_hash {
-  my $self = shift;
-  my $hash = {map { $_ => '' . ($self->$_ || '') } keys %selector};
-  if ($self->enclosures->size) {
-    $hash->{'enclosures'} = $self->enclosures->map('to_hash')->to_array;
-  }
-  if ($self->tags->size) {
-    $hash->{'tags'} = $self->tags->to_array;
-  }
-  return $hash;
-}
+package Mojo::Feed::Item::Atom;
+use Mojo::Base 'Mojo::Feed::Item';
 
 1;
 
@@ -123,21 +9,21 @@ __END__
 
 =head1 NAME
 
-Mojo::Feed::Item - represents an item from an RSS/Atom feed.
+Mojo::Feed::Item::Atom - represents an item from an Atom 1 feed.
 
 =head1 SYNOPSIS
 
     use Mojo::Feed;
 
-    my $feed = Mojo::Feed->new("atom.xml");
+    my $feed = Mojo::Feed::Atom->new("atom.xml");
 
-    my $item = $feed->items->first;
+    my $item = $feed->entries->first;
 
     print $item->title, $item->author, $item->published, "\n";
 
 =head1 DESCRIPTION
 
-L<Mojo::Feed::Item> is an Object wrapper for a item from an RSS or Atom Feed.
+L<Mojo::Feed::Item::Atom> is an Object wrapper for a entry from an RSS or Atom Feed.
 
 =head1 ATTRIBUTES
 
