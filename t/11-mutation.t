@@ -77,7 +77,23 @@ subtest('Mutating', sub {
       cmp_deeply $hash_got, $changed_hash, $file
           or diag explain $hash_got;
   }
+});
 
+# This is the real test we want to write:
+subtest('Mutating and serializing', sub {
+  for my $file (sort keys %Hashes) {
+      my $path = path( $FindBin::Bin, 'samples', $file );
+      my $feed = Mojo::Feed->new(file => $path)
+          or fail "parse feed ($file) returned undef", next;
+# Now, mutate:
+      $feed->title(q{Melody's Blog});
+      $feed->items->[1]{'author'} = 'Melody';
+      $feed->items->[0]{'published'} = 1085902866;
+      my $feed2 = Mojo::Feed->new(body => "$feed");
+      is $feed2->title, $feed->title, $file . ' - change feed title';
+      is $feed2->items->[1]->author, $feed->items->[1]->author, $file . ' - change second item author';
+      is $feed2->items->[0]->published, $feed->items->[0]->published, $file . ' - change first item published time';
+  }
 });
 
 
