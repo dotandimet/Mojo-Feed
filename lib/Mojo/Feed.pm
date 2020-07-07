@@ -71,13 +71,25 @@ has feed_type => sub {
     :                    'unknown';
 };
 
+has namespaces => sub {
+  my $attrs = shift->dom->children->first->attr;
+  my $namespaces = {};
+  for my $at (keys %$attrs) {
+    if ($at =~ /xmlns\:?(\w*)/) {
+      my $ns = ($1 || 'atom');  # rss doesn't declare a namespace?
+      $namespaces->{$ns} = $attrs->{$at};
+    }
+  }
+  return $namespaces;
+};
+
 my %generic = (
   description => ['description', 'tagline', 'subtitle'],
   published   => [
-    'published', 'pubDate', 'dc\:date', 'created',
+    'published', 'pubDate', 'dc|date', 'created',
     'issued',    'updated', 'modified'
   ],
-  author   => ['author', 'dc\:creator', 'webMaster'],
+  author   => ['author', 'dc|creator', 'webMaster', 'copyright'],
   title    => ['title'],
   subtitle => ['subtitle', 'tagline'],
   link     => ['link:not([rel])', 'link[rel=alternate]'],
@@ -87,7 +99,7 @@ foreach my $k (keys %generic) {
   has $k => sub {
     my $self = shift;
     for my $generic (@{$generic{$k}}) {
-      if (my $p = $self->dom->at("channel > $generic, feed > $generic")) {
+      if (my $p = $self->dom->at("channel > $generic, feed > $generic", %{$self->namespaces})) {
         if ($k eq 'author' && $p->at('name')) {
           return trim $p->at('name')->text;
         }
