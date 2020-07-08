@@ -56,11 +56,13 @@ has dom => sub {
   return Mojo::DOM->new($self->text);
 };
 
+has root => sub { shift->dom->children->first };
+
 has feed_type => sub {
-  my $top     = shift->dom->children->first;
+  my $top     = shift->root;
   my $tag     = $top->tag;
   my $version = $top->attr('version');
-  my $ns      = $top->attr('namespace');
+  my $ns      = $top->namespace;
   return
       ($tag =~ /feed/i)
     ? ($version)
@@ -72,12 +74,12 @@ has feed_type => sub {
 };
 
 has namespaces => sub {
-  my $attrs = shift->dom->children->first->attr;
-  my $namespaces = {};
+  my $top = shift->root;
+  my $namespaces = { atom => $top->namespace };  # only Atom feeds declare a namespace?
+  my $attrs = $top->attr;
   for my $at (keys %$attrs) {
-    if ($at =~ /xmlns\:?(\w*)/) {
-      my $ns = ($1 || 'atom');  # rss doesn't declare a namespace?
-      $namespaces->{$ns} = $attrs->{$at};
+    if ($at =~ /xmlns\:(\w+)/) { # extra namespace declaration
+      $namespaces->{$1} = $attrs->{$at};
     }
   }
   return $namespaces;
