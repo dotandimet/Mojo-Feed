@@ -96,5 +96,15 @@ subtest('Mutating and serializing', sub {
   }
 });
 
+subtest('Filter Items', sub {
+  my $path = path( $FindBin::Bin, 'samples', 'atom.xml' );
+  my $feed = Mojo::Feed->new(file => $path);
+  is $feed->items->size, 2, 'first feed has 2 items';
+  # filter only items that are about sports:
+  $feed->set_items($feed->items->grep(sub { $_->tags->first(qr/sport/i) }));
+  my $feed2 = Mojo::Feed->new(body => "$feed");
+  is $feed2->items->size, 1, 'new feed has only one item';
+  is_deeply $feed2->items->map('tags')->map('to_array'), [ ['Sports'] ];
+});
 
 done_testing();
