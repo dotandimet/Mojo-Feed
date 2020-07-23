@@ -24,7 +24,9 @@
 <entry>
 <title>Entry Two</title>
 <summary>Hello!...</summary>
-<content type="xhtml"><![CDATA[<p>Hello!</p>]]></content>
+<content type="xhtml">
+     <p>Hello!</p>
+</content>
 <link href="http://localhost/weblog/2004/05/entry_two.html"/>
 <author>Melody</author>
 <id>http://localhost/weblog/2004/05/entry_two.html</id>

@@ -46,7 +46,8 @@ foreach my $k (keys %selector) {
         if ($k eq 'author' && $p->at('name')) {
           return trim $p->at('name')->text;
         }
-        my $text = trim ($p->text || $p->content || '');
+        my ($text) = grep $_, map trim($_), grep $_, $p->text, $p->content;
+        $text ||= '';
         if ($k eq 'published') {
           return str2time($text);
         }
