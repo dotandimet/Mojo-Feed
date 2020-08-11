@@ -7,12 +7,23 @@ use Storable qw(dclone);
 
 my %Hashes = (
     'atom1-short.xml' => 'Atom 1.0',
-    'rss20.xml' => 'RSS 2.0',
+    'rss20-three.xml' => 'RSS 2.0',
 );
 my $hash_expected = {
     author => 'Melody',
     description => 'This is a test weblog.',
     items => [
+        {
+            author => 'Melody',
+            content => '<p>Hello!</p>',
+            description => 'Hello again!...',
+            guid => ignore(),
+            id => 'http://localhost/weblog/2004/05/entry_three.html',
+            link => 'http://localhost/weblog/2004/05/entry_three.html',
+            published => '1085902785',
+            tags => [ 'Travel', 'Sports' ],
+            title => 'Entry Three',
+        },
         {
             author => 'Melody',
             content => '<p>Hello!</p>',
