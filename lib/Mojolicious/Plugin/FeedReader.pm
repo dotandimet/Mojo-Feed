@@ -254,11 +254,9 @@ Each item in the items array is a hashref with the following keys:
 
 =item * content (may be filled with content:encoded, xhtml:body or description fields)
 
-=item * id (will be equal to link or guid if it is undefined and either of those fields exists)
+=item * id (will be equal to guid or link if it is undefined and either of those fields exists)
 
 =item * description (optional) - usually a shorter form of the content (may be filled with summary if description is missing)
-
-=item * guid (optional)
 
 =item * published - time in epoch seconds (may be filled with pubDate, dc:date, created, issued, updated or modified)
 

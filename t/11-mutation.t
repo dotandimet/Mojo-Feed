@@ -1,6 +1,5 @@
 use Mojo::Feed;
 use Test::More;
-use Test::Deep;
 use FindBin;
 use Mojo::File qw(path);
 use Storable qw(dclone);
@@ -17,7 +16,6 @@ my $hash_expected = {
             author => 'Melody',
             content => '<p>Hello!</p>',
             description => 'Hello again!...',
-            guid => ignore(),
             id => 'http://localhost/weblog/2004/05/entry_three.html',
             link => 'http://localhost/weblog/2004/05/entry_three.html',
             published => '1085902785',
@@ -28,7 +26,6 @@ my $hash_expected = {
             author => 'Melody',
             content => '<p>Hello!</p>',
             description => 'Hello!...',
-            guid => ignore(),
             id => 'http://localhost/weblog/2004/05/entry_two.html',
             link => 'http://localhost/weblog/2004/05/entry_two.html',
             published => '1085902765',
@@ -41,7 +38,6 @@ my $hash_expected = {
 
 <p>Why don\'t you come down to our place for a coffee and a <strong>chat</strong>?</p>',
             description => 'This is a test. Why don\'t you come down to our place for a coffee and a chat?...',
-            guid => ignore(),
             id => 'http://localhost/weblog/2004/05/test.html',
             link => 'http://localhost/weblog/2004/05/test.html',
             published => '1084086208',
@@ -63,7 +59,7 @@ subtest('Hash Structure', sub {
           or fail "parse feed ($file) returned undef", next;
       is $feed->feed_type, $feed_type_expected;
       my $hash_got = $feed->to_hash;
-      cmp_deeply $hash_got, $hash_expected, $file
+      is_deeply $hash_got, $hash_expected, $file
           or diag explain $hash_got;
   }
 }
@@ -85,7 +81,7 @@ subtest('Mutating', sub {
       $feed->items->[1]{'author'} = 'Melody';
       $feed->items->[0]{'published'} = 1085902866;
       my $hash_got = $feed->to_hash;
-      cmp_deeply $hash_got, $changed_hash, $file
+      is_deeply $hash_got, $changed_hash, $file
           or diag explain $hash_got;
   }
 });

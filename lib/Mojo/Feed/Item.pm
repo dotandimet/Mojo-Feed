@@ -12,7 +12,7 @@ use overload
   fallback => 1;
 
 
-has [qw(title link content id description guid published author)];
+has [qw(title link content id description published author)];
 
 has tags => sub {
   shift->dom->find('category, dc\:subject')
@@ -34,8 +34,7 @@ my %selector = (
   author => ['|author', 'atom|author', 'dc|creator'],
   id     => ['id',     'guid', 'link'],
   title => ['title'],
-  link  => ['link'],
-  guid  => ['guid'],
+  link  => ['link']
 );
 
 sub _get_selector {
@@ -179,15 +178,11 @@ May be filled with C<content:encoded>, C<xhtml:body> or C<description> fields
 
 =head2  id
 
-Will be equal to C<link> or C<guid> if it is undefined and either of those fields exists
+Will be equal to C<guid> or C<link> if it is undefined and either of those fields exists
 
 =head2  description
 
 Optional - usually a shorter form of the content (may be filled with C<summary> if description is missing)
-
-=head2  guid
-
-Optional
 
 =head2  published
 
