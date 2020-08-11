@@ -41,8 +41,18 @@ has body => sub {
   if ($self->url ne '') {
     return $self->_load();
   }
-  else {    # skip file tests, just slurp (for Mojo::Asset::File)
+  elsif ($self->file ne Mojo::File->new()) {
+    # skip file tests, just slurp (for Mojo::Asset::File)
     return $self->file->slurp();
+  }
+  elsif ($self->feed_type eq 'Atom 1.0') {
+    return $self->_atom_template();
+  }
+  elsif ($self->feed_type eq 'RSS 2.0') {
+    return $self->_rss_template();
+  }
+  else {
+    return '';  # or croak...
   }
 };
 
@@ -283,6 +293,26 @@ sub to_string {
   $self->items->each(sub { $_->to_string });  # maybe break this out to a sync method
   $self->dom->to_string;
 }
+
+sub _atom_template {
+return <<ATOM
+<?xml version="1.0" encoding="UTF-8"?>
+<feed
+  xmlns="http://www.w3.org/2005/Atom">
+</feed>
+ATOM
+}
+
+sub _rss_template {
+return <<RSS
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+</channel>
+</rss>
+RSS
+}
+
 
 1;
 __END__

@@ -114,13 +114,26 @@ subtest('Filter Items', sub {
   is_deeply $feed2->items->map('tags')->map('to_array'), [ ['Sports'] ];
 });
 
+subtest('Building a Feed', sub {
+  my $file = 'atom1-short.xml';
+  my $feed = Mojo::Feed->new(feed_type => 'Atom 1.0');
+  $feed->description('This is a test weblog')
+       ->title('First Weblog')
+       ->author('Melody')
+       ->link('http://localhost/weblog/');
+  for my $item (@{$hash_expected->{items}}) {
+    push @{$feed->items}, Mojo::Feed::Item->new(feed => $feed, %$item);
+  }
+  my $feed2 = Mojo::Feed->new(body => "$feed");
+  is_deeply $feed2->to_hash, $hash_expected, 'roundtrip hash<->string Atom 1.0';
+});
+
 subtest('Initialize from Hash', sub {
   my $file = 'atom1-short.xml';
-  my $hash = $Hashes{$file};
-  my $feed = Mojo::Feed->new(%$hash, feed_type => 'Atom 1.0');
+  my $feed = Mojo::Feed->new(%$hash_expected, feed_type => 'Atom 1.0');
 #  my $from_file = path($FindBin::Bin, 'samples', $file)->slurp();
-  my $feed2 = Mojo::Feed->new("$feed");
-  is_deeply $feed2->to_hash, $hash, 'roundtrip hash<->string Atom 1.0';
+  my $feed2 = Mojo::Feed->new(body => "$feed");
+  is_deeply $feed2->to_hash, $hash_expected, 'roundtrip hash<->string Atom 1.0';
 });
 
 done_testing();

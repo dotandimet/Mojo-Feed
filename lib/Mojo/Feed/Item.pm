@@ -19,7 +19,17 @@ has tags => sub {
     ->map(sub { $_[0]->text || $_[0]->attr('term') });
 };
 
-has 'dom';
+has dom => sub {
+  my $self = shift;
+  my $feed_type = $self->feed->feed_type;
+  if ($feed_type eq 'Atom 1.0') {
+    return $self->feed->dom->at('feed')->append_content('<entry></entry>')->at('entry:last-child');
+  }
+  elsif ($feed_type eq 'RSS 2.0') {
+    return $self->channel->dom->at('channel')->append_content('<item></item>')->at('item:last-child');
+  }
+};
+
 has feed => undef, weak => 1;
 
 has summary => sub { shift->description };
