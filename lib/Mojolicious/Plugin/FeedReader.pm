@@ -78,7 +78,7 @@ sub find_feeds {
   }
   my $promise = $self->feed_reader->discover(@_);
   if ($cb) {
-    $promise->then($cb);
+    return $promise->then($cb);
   }
   else {
     my @res;
@@ -118,19 +118,14 @@ Mojolicious::Plugin::FeedReader - Mojolicious plugin to find and parse RSS & Ato
         get '/nb' => sub {
           my $self = shift;
           $self->render_later;
-          my $delay = Mojo::IOLoop->delay(
-            sub {
-              $self->find_feeds("search.cpan.org", shift->begin(0));
-            },
+          $self->find_feeds("search.cpan.org",
             sub {
               my $feed = pop;
               $self->parse_feed($feed, shift->begin);
-            },
-            sub {
+            })->then(sub {
                 my $data = pop;
                 $self->render(template => 'uploads', items => $data->{items});
-            });
-          $delay->wait unless Mojo::IOLoop->is_running;
+            })->wait;
         };
 
         app->start;
