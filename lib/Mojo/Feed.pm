@@ -17,7 +17,7 @@ use overload
   '""'     => sub { shift->to_string },
   fallback => 1;
 
-our $VERSION = "0.20";
+our $VERSION = "0.21";
 
 has charset => 'UTF-8';
 
