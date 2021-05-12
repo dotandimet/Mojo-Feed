@@ -4,7 +4,7 @@
       "Dotan Dimet <dotan@corky.net>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Minilla/v3.1.10, CPAN::Meta::Converter version 2.150010",
+   "generated_by" : "Minilla/v3.1.6, CPAN::Meta::Converter version 2.150010",
    "license" : [
       "artistic_2"
    ],
@@ -51,7 +51,6 @@
       },
       "test" : {
          "requires" : {
-            "Test::Deep" : "1.127",
             "Test::More" : "0.98"
          }
       }
@@ -68,12 +67,12 @@
          "web" : "https://github.com/dotandimet/Mojo-Feed"
       }
    },
-   "version" : "0.20",
+   "version" : "0.21",
    "x_authority" : "cpan:DOTAN",
    "x_contributors" : [
       "Ed J <mohawk2@users.noreply.github.com>",
       "Mario Domgoergen <mdom@taz.de>"
    ],
-   "x_serialization_backend" : "JSON::PP version 4.02",
+   "x_serialization_backend" : "JSON::PP version 4.04",
    "x_static_install" : 1
 }
